@@ -1,0 +1,8 @@
+node_modules/
+tests/
+qa-*.js
+qa-*.png
+server.js
+server.log
+package.json
+package-lock.json

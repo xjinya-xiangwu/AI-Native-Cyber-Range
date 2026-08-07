@@ -1,0 +1,230 @@
+/* ──────────────────────────────────────────────────────────────────────
+ * DiscoveryOS · 暖纸 + 暖夜（v2.2）· tweakcn / shadcn 主题导出
+ *
+ * 来源规范 ：discoveryos-style-guide.v2.2.md
+ * 设计立场 ：
+ *   - 暖纸（Light）：#fdfcf8 暖米背景 + #1554a8 朱砂蓝主色
+ *   - 暖夜（Dark） ：#1a1815 暖夜背景 + #7aa5db 浅化朱砂（H 214° 严格保持）
+ *   - 圆角 2px、阴影克制、字体即语义
+ *
+ * 用法（tweakcn）：
+ *   1. 打开 https://tweakcn.com/editor/theme
+ *   2. Import → Paste CSS → 粘贴本文件全部内容
+ *   3. 切换 light/dark 预览；导出至项目 globals.css
+ *
+ * 用法（直接接入 shadcn/ui 项目 · Tailwind v4）：
+ *   将本文件粘贴进 app/globals.css，覆盖原 :root / .dark 块即可。
+ * ──────────────────────────────────────────────────────────────────── */
+
+:root {
+  /* ── 表面 / 文字 ─────────────────────────────────────── */
+  --background: #fdfcf8;            /* 暖纸主背景 · DiscoveryOS --paper */
+  --foreground: #1a2332;            /* 主文字 · --ink */
+
+  --card: #ffffff;                  /* L1 卡片 · 平等容器 */
+  --card-foreground: #1a2332;
+
+  --popover: #ffffff;               /* dropdown / popover / tooltip 容器 */
+  --popover-foreground: #1a2332;
+
+  /* ── 主色 · 朱砂蓝 L6 ─────────────────────────────────── */
+  --primary: #1554a8;               /* --vermilion-6 · H 214° / S 78% / L 37% */
+  --primary-foreground: #ffffff;    /* AA 5.6:1 */
+
+  /* ── 次级 / 静音 / 强调 ──────────────────────────────── */
+  --secondary: #f7f4ec;             /* --paper-warm · 悬停渗透色 */
+  --secondary-foreground: #1a2332;
+
+  --muted: #fafaf7;                 /* --paper-cool · 中性次级容器 */
+  --muted-foreground: #7a8394;      /* --ink-mute · AA 4.6:1 */
+
+  --accent: #f7f4ec;                /* hover/active 底色 */
+  --accent-foreground: #1554a8;     /* active 文字走主色 */
+
+  /* ── 破坏性（删除 / 错误）───────────────────────────── */
+  --destructive: #c03030;           /* --error */
+  --destructive-foreground: #ffffff;
+
+  /* ── 边框 / 输入 / 焦点环 ───────────────────────────── */
+  --border: #e8e4d9;                /* --rule */
+  --input: #e8e4d9;
+  --ring: #1554a8;                  /* :focus-visible 朱砂环（功能上 DiscoveryOS 用 ink shadow，
+                                       但 shadcn ring 默认绑定 primary）*/
+
+  /* ── 图表 5 色 · 朱砂 + 语义 ──────────────────────────── */
+  --chart-1: #1554a8;               /* vermilion-6 · 主品牌 */
+  --chart-2: #88addd;               /* vermilion-4 · 浅蓝 */
+  --chart-3: #6b7a3a;               /* success */
+  --chart-4: #a8864b;               /* warning */
+  --chart-5: #0c3c80;               /* vermilion-7 · 深朱砂 */
+
+  /* ── Sidebar ──────────────────────────────────────────── */
+  --sidebar: #fafaf7;               /* --paper-cool */
+  --sidebar-foreground: #1a2332;
+  --sidebar-primary: #1554a8;
+  --sidebar-primary-foreground: #ffffff;
+  --sidebar-accent: #f7f4ec;        /* hover */
+  --sidebar-accent-foreground: #1a2332;
+  --sidebar-border: #e8e4d9;
+  --sidebar-ring: #1554a8;
+
+  /* ── 字体栈 ──────────────────────────────────────────── */
+  --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC', 'Noto Sans SC', sans-serif;
+  --font-serif: 'Cormorant Garamond', 'Noto Serif SC', serif;
+  --font-mono: 'JetBrains Mono', ui-monospace, 'SF Mono', Menlo, monospace;
+
+  /* ── 圆角 · 2px 是几乎全部 ─────────────────────────── */
+  --radius: 0.125rem;               /* = 2px · 唯一锐角承诺 */
+
+  /* ── 阴影阶梯 · 中性墨黑色（DiscoveryOS 默认 flat）── */
+  /* 小阶（2xs / xs / sm / base / md）极弱 — 本系统几乎不使用 */
+  --shadow-2xs: 0 1px 0 0 rgba(26, 35, 50, 0.02);
+  --shadow-xs:  0 1px 2px 0 rgba(26, 35, 50, 0.03);
+  --shadow-sm:  0 1px 3px 0 rgba(26, 35, 50, 0.04), 0 1px 2px -1px rgba(26, 35, 50, 0.04);
+  --shadow:     0 2px 6px -1px rgba(26, 35, 50, 0.05), 0 1px 4px -2px rgba(26, 35, 50, 0.04);
+  --shadow-md:  0 4px 12px -2px rgba(26, 35, 50, 0.06), 0 2px 6px -3px rgba(26, 35, 50, 0.05);
+  /* 大阶（lg / xl / 2xl）= DiscoveryOS 唯二合法投影 */
+  --shadow-lg:  0 8px 24px -2px rgba(0, 0, 0, 0.08);   /* = --shadow-overlay */
+  --shadow-xl:  0 12px 40px -3px rgba(0, 0, 0, 0.10);
+  --shadow-2xl: 0 20px 60px -4px rgba(0, 0, 0, 0.12);  /* = --shadow-modal */
+
+  /* ── 字距 · DiscoveryOS 通常使用基线（特殊场景在组件内单独覆盖）── */
+  --tracking-normal: 0em;
+
+  /* ── 间距单位 · 沿用 Tailwind 默认 0.25rem (4px)；
+        DiscoveryOS 间距阶梯 4/6/8/10/12/14/16/20/24/32/40/56/80 全部为 4 的倍数 ── */
+  --spacing: 0.25rem;
+}
+
+/* ──────────────────────────────────────────────────────────────────────
+ * Dark · 暖夜
+ * 设计哲学：不是 light 的颜色取反，而是"暖调暗色重表达"。
+ *   - 背景保留 ~10° 暖偏（#1a1815 而非 #000 / #1a1a1a）
+ *   - 主色色相 H 214° 严格保持，仅明度由 L37% 升至 L67%
+ *   - 文字暖白（#ebe6dc 而非 #ffffff），避免视觉灼烧
+ * ──────────────────────────────────────────────────────────────────── */
+.dark {
+  /* ── 表面 / 文字 ─────────────────────────────────────── */
+  --background: #1a1815;            /* 暖夜主背景 */
+  --foreground: #ebe6dc;            /* 暖白文字 */
+
+  --card: #252320;                  /* paper-warm 暖夜 · 卡片轻提 */
+  --card-foreground: #ebe6dc;
+
+  --popover: #252320;
+  --popover-foreground: #ebe6dc;
+
+  /* ── 主色 · 浅化朱砂蓝 L6（暗色域）─────────────────── */
+  --primary: #7aa5db;               /* H 214° / S 56% / L 67% */
+  --primary-foreground: #1a1815;    /* 深底文字 · 在浅化主色上达 AAA */
+
+  /* ── 次级 / 静音 / 强调 ──────────────────────────────── */
+  --secondary: #252320;
+  --secondary-foreground: #ebe6dc;
+
+  --muted: #1f1d1a;
+  --muted-foreground: #8a8478;      /* AA 4.5:1 on #1a1815 */
+
+  --accent: #252320;
+  --accent-foreground: #7aa5db;     /* active 文字走暗色域主色 */
+
+  /* ── 破坏性 ──────────────────────────────────────────── */
+  --destructive: #e57878;           /* error 暗色域 */
+  --destructive-foreground: #1a1815;
+
+  /* ── 边框 / 输入 / 焦点环 ───────────────────────────── */
+  --border: #3a3631;
+  --input: #3a3631;
+  --ring: #7aa5db;
+
+  /* ── 图表 5 色 · 暗色域 ─────────────────────────────── */
+  --chart-1: #7aa5db;               /* vermilion-6 dark */
+  --chart-2: #5b88c2;               /* vermilion-5 dark */
+  --chart-3: #a4b870;               /* success dark */
+  --chart-4: #d4ad6a;               /* warning dark */
+  --chart-5: #a0c2e8;               /* vermilion-7 dark */
+
+  /* ── Sidebar ──────────────────────────────────────────── */
+  --sidebar: #1f1d1a;
+  --sidebar-foreground: #ebe6dc;
+  --sidebar-primary: #7aa5db;
+  --sidebar-primary-foreground: #1a1815;
+  --sidebar-accent: #252320;
+  --sidebar-accent-foreground: #ebe6dc;
+  --sidebar-border: #3a3631;
+  --sidebar-ring: #7aa5db;
+
+  /* ── 阴影阶梯 · 暗色域加深（rgba 黑色提高不透明度） ── */
+  --shadow-2xs: 0 1px 0 0 rgba(0, 0, 0, 0.20);
+  --shadow-xs:  0 1px 2px 0 rgba(0, 0, 0, 0.25);
+  --shadow-sm:  0 1px 3px 0 rgba(0, 0, 0, 0.30), 0 1px 2px -1px rgba(0, 0, 0, 0.25);
+  --shadow:     0 2px 6px -1px rgba(0, 0, 0, 0.30), 0 1px 4px -2px rgba(0, 0, 0, 0.25);
+  --shadow-md:  0 4px 12px -2px rgba(0, 0, 0, 0.35), 0 2px 6px -3px rgba(0, 0, 0, 0.30);
+  --shadow-lg:  0 8px 24px -2px rgba(0, 0, 0, 0.40);   /* = --shadow-overlay dark */
+  --shadow-xl:  0 12px 40px -3px rgba(0, 0, 0, 0.50);
+  --shadow-2xl: 0 20px 60px -4px rgba(0, 0, 0, 0.55);  /* = --shadow-modal dark */
+}
+
+
+/* ──────────────────────────────────────────────────────────────────────
+ * 系统级偏好回退（无 .dark 类时跟随系统）
+ * 与 v2.2 §1.1.2 行为一致：[data-theme="dark"] 优先于此。
+ * 若你已用 next-themes 或类似方案手动给 <html> 加 .dark，可移除本块。
+ * ──────────────────────────────────────────────────────────────────── */
+@media (prefers-color-scheme: dark) {
+  :root:not(.light):not([data-theme="light"]) {
+    --background: #1a1815;
+    --foreground: #ebe6dc;
+    --card: #252320;
+    --card-foreground: #ebe6dc;
+    --popover: #252320;
+    --popover-foreground: #ebe6dc;
+    --primary: #7aa5db;
+    --primary-foreground: #1a1815;
+    --secondary: #252320;
+    --secondary-foreground: #ebe6dc;
+    --muted: #1f1d1a;
+    --muted-foreground: #8a8478;
+    --accent: #252320;
+    --accent-foreground: #7aa5db;
+    --destructive: #e57878;
+    --destructive-foreground: #1a1815;
+    --border: #3a3631;
+    --input: #3a3631;
+    --ring: #7aa5db;
+    --chart-1: #7aa5db;
+    --chart-2: #5b88c2;
+    --chart-3: #a4b870;
+    --chart-4: #d4ad6a;
+    --chart-5: #a0c2e8;
+    --sidebar: #1f1d1a;
+    --sidebar-foreground: #ebe6dc;
+    --sidebar-primary: #7aa5db;
+    --sidebar-primary-foreground: #1a1815;
+    --sidebar-accent: #252320;
+    --sidebar-accent-foreground: #ebe6dc;
+    --sidebar-border: #3a3631;
+    --sidebar-ring: #7aa5db;
+    --shadow-2xs: 0 1px 0 0 rgba(0, 0, 0, 0.20);
+    --shadow-xs:  0 1px 2px 0 rgba(0, 0, 0, 0.25);
+    --shadow-sm:  0 1px 3px 0 rgba(0, 0, 0, 0.30), 0 1px 2px -1px rgba(0, 0, 0, 0.25);
+    --shadow:     0 2px 6px -1px rgba(0, 0, 0, 0.30), 0 1px 4px -2px rgba(0, 0, 0, 0.25);
+    --shadow-md:  0 4px 12px -2px rgba(0, 0, 0, 0.35), 0 2px 6px -3px rgba(0, 0, 0, 0.30);
+    --shadow-lg:  0 8px 24px -2px rgba(0, 0, 0, 0.40);
+    --shadow-xl:  0 12px 40px -3px rgba(0, 0, 0, 0.50);
+    --shadow-2xl: 0 20px 60px -4px rgba(0, 0, 0, 0.55);
+  }
+}
+
+/* ──────────────────────────────────────────────────────────────────────
+ * 基础重置（可选 · tweakcn 通常不包含；此处保持 DiscoveryOS 立场一致）
+ * ──────────────────────────────────────────────────────────────────── */
+html { color-scheme: light dark; }
+
+body {
+  font-family: var(--font-sans);
+  background: var(--background);
+  color: var(--foreground);
+}
+
+/* End of theme · DiscoveryOS v2.2 (tweakcn export) */

@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html lang="zh-CN" class="dark">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AI 安全攻防演练平台 · Agent-Native 作战回路</title>
+<link rel="icon" href="data:,">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@400;500;600&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="tokens.css">
+<link rel="stylesheet" href="styles.css">
+<link rel="stylesheet" href="agent.css">
+</head>
+<body>
+  <div id="app">
+    <!-- 左侧抽屉式可收缩侧边导航（Agent-Native 版：态势感知 / 操作中心 / 资源中心） -->
+    <aside class="sidebar" id="sidebar">
+      <div class="sb-brand">
+        <span class="sb-mark serif">AI</span>
+        <div class="sb-brand-text">
+          <span class="sb-brand-name serif">AI安全攻防演练平台</span>
+          <span class="sb-brand-sub">AGENT-NATIVE 作战回路</span>
+        </div>
+      </div>
+      <nav class="sb-nav" id="sidenav">
+        <!-- 区块一 · 态势感知（首页 · AI 召唤层背景） -->
+        <a href="#/dashboard" data-route="dashboard">
+          <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4"><circle cx="8" cy="8" r="6"/><path d="M2 8h12M8 2c1.7 1.6 2.6 3.7 2.6 6S9.7 12.4 8 14c-1.7-1.6-2.6-3.7-2.6-6S6.3 3.6 8 2z"/></svg>
+          <span class="sb-label">态势感知</span>
+          <span class="sb-tip">态势感知</span>
+        </a>
+        <!-- 区块二 · 操作中心 -->
+        <div class="sb-group">操作中心</div>
+        <div class="sb-l1" data-l1="test">
+          <button class="sb-l1-btn" type="button">
+            <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4"><rect x="2.5" y="2" width="11" height="12" rx="1"/><path d="M5.5 5.5h5M5.5 8h5M5.5 10.5h3"/></svg>
+            <span class="sb-label">测试任务</span><span class="sb-caret">▾</span>
+            <span class="sb-tip">测试任务</span>
+          </button>
+          <div class="sb-l2">
+            <a href="#/tasks" data-route="tasks"><span class="sb-label">任务中心</span><span class="run-dot" id="run-dot" style="display:none"></span></a>
+            <a href="#/confirm" data-route="confirm"><span class="sb-label">结果确认</span><span class="judge-dot" id="judge-dot" style="display:none"></span></a>
+          </div>
+        </div>
+        <div class="sb-l1" data-l1="train">
+          <button class="sb-l1-btn" type="button">
+            <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4"><path d="M8 2.5 14.5 6 8 9.5 1.5 6z"/><path d="M4 7.5V11c0 1.1 1.8 2 4 2s4-.9 4-2V7.5"/></svg>
+            <span class="sb-label">训练任务</span><span class="sb-caret">▾</span>
+            <span class="sb-tip">训练任务</span>
+          </button>
+          <div class="sb-l2">
+            <a href="#/training" data-route="training"><span class="sb-label">任务中心</span></a>
+            <a href="#/training-live" data-route="training-live"><span class="sb-label">实时监控</span></a>
+            <a href="#/models" data-route="models"><span class="sb-label">模型中心</span></a>
+          </div>
+        </div>
+        <!-- 区块三 · 资源中心 -->
+        <div class="sb-group">资源中心</div>
+        <a href="#/data" data-route="data">
+          <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4"><ellipse cx="8" cy="3.5" rx="6" ry="2.5"/><path d="M2 3.5v9c0 1.4 2.7 2.5 6 2.5s6-1.1 6-2.5v-9"/><path d="M2 8c0 1.4 2.7 2.5 6 2.5s6-1.1 6-2.5"/></svg>
+          <span class="sb-label">数据中心</span>
+          <span class="sb-tip">数据中心</span>
+        </a>
+        <a href="#/gateway" data-route="gateway">
+          <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4"><path d="M6 8.5 10 4.5M8 10.5l2-2M4 12l-1.5 1.5a2.1 2.1 0 1 1-3-3L3 7m10 5 1.5 1.5a2.1 2.1 0 1 0 3-3L13 7" transform="translate(0,-1)"/></svg>
+          <span class="sb-label">接入网关</span>
+          <span class="sb-tip">接入网关</span>
+        </a>
+      </nav>
+      <div class="sb-spacer"></div>
+      <button class="sb-collapse" id="sb-collapse" title="收起导航">« <span class="sb-label">收起导航</span></button>
+      <div class="sb-foot">
+        <button class="btn btn-ghost sb-theme" id="theme-toggle" title="切换深/浅主题" aria-label="切换主题">
+          <span id="theme-icon">◑</span>
+        </button>
+        <!-- 用户区（沿用 V3.5：本期不做权限管理，仅个人中心 / 退出登录） -->
+        <div class="user-center" id="user-center">
+          <button class="btn btn-ghost uc-btn" id="user-center-btn" aria-haspopup="true" aria-expanded="false" title="用户">
+            <span class="uc-avatar">OP</span>
+            <span class="uc-name">operator</span>
+          </button>
+          <div class="uc-pop" id="user-pop" hidden>
+            <div class="uc-pop-head">
+              <span class="uc-avatar uc-avatar-lg">OP</span>
+              <div class="uc-pop-id">
+                <strong>operator</strong>
+                <span class="muted small">SSO 已登录 · aisr.lab</span>
+              </div>
+            </div>
+            <div class="uc-pop-sep"></div>
+            <button class="uc-role-item" id="uc-profile">
+              <span class="uc-role-main"><b>个人中心</b><small class="muted">资料 / 安全设置 / 我的 API 密钥</small></span>
+            </button>
+            <button class="uc-role-item" id="uc-logout">
+              <span class="uc-role-main"><b>退出登录</b><small class="muted">返回 SSO 登录页</small></span>
+            </button>
+          </div>
+        </div>
+      </div>
+    </aside>
+
+    <!-- 各视图由 app.js / agent.js 渲染 -->
+    <main id="view"></main>
+  </div>
+
+  <!-- 弹窗挂载点 -->
+  <div id="modal-root"></div>
+  <!-- Agent-Native 召唤层挂载点（悬浮球 / 问候气泡 / 编排对话框） -->
+  <div id="agent-root"></div>
+
+  <script src="data.js"></script>
+  <script src="agent-data.js"></script>
+  <script src="app.js"></script>
+  <script src="agent.js"></script>
+</body>
+</html>
