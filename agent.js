@@ -106,6 +106,12 @@ function agOpenDialog(prefill) {
     <div class="ag-dialog-kicker">AGENT ORCHESTRATOR · 作战回路入口</div>
     <div class="ag-dialog-title">描述一个目标，<em>Agent 编队</em>完成剩下的</div>
     <div class="ag-dialog-sub">攻击、防御、评测、训练的执行体都是 Agent · 推理、代价与证据全程可见 · 轨迹沉淀回流训练</div>
+    <div class="ag-cred">
+      <span class="ag-cred-item">CyberGym 漏洞挖掘 <b>90.84%</b> · 国内第一</span>
+      <span class="ag-cred-item">PatchEval 漏洞修复 <b>43.48%</b> · 总榜第一</span>
+      <span class="ag-cred-item">ExploitGym 漏洞利用 <b>64</b> 个 · 总榜第四</span>
+      <span class="ag-cred-note">书安攻防智能体 DoGNAVY · 匿名参赛成绩</span>
+    </div>
     <div class="ag-input-box">
       <textarea class="ag-input" id="ag-text" placeholder="描述一个演练目标、一个评测假设，或直接粘贴一段威胁情报……">${prefill ? esc(prefill) : ''}</textarea>
       <div class="ag-input-foot">
@@ -117,7 +123,7 @@ function agOpenDialog(prefill) {
         <button class="btn btn-primary" id="ag-go">开始演练 →</button>
       </div>
     </div>
-    <div class="ag-section-label">技术亮点 · 从模板开始（完整推理轨迹演示）</div>
+    <div class="ag-section-label">三条作战轨迹 · 从一次完整演练开始</div>
     <div class="ag-tpl-grid">
       ${AG_TEMPLATES.map((t) => `
       <button class="ag-tpl" data-tpl="${t.id}">
@@ -645,6 +651,8 @@ function agViz(v) {
     case 'space': return agVizSpace(v);
     case 'branches': return agVizBranches(v);
     case 'trajscale': return agVizTraj(v);
+    case 'lanes': return agVizLanes(v);
+    case 'funnel': return agVizFunnel(v);
     default: return '';
   }
 }
@@ -718,14 +726,14 @@ function agVizSpace(v) {
     <div class="vz-sp-formula">
       ${col('攻击方法库', '86 项', ['网络攻击 52', '智能体攻击 24', '物理 AI 10'])}
       <span class="vz-sp-x">×</span>
-      ${col('异构场景池', '3,400 个', ['网络靶场 2,100', '智能体沙箱 900', '物理 AI 仿真 400'])}
+      ${col('异构场景池', '10.3K', ['网络靶场 5K', '智能体沙箱 3.3K', '物理 AI 仿真 2K'])}
       <span class="vz-sp-x">×</span>
       ${col('编排策略', '12 种', ['串联 5', '并联 4', '条件 3'])}
       <span class="vz-sp-eq">=</span>
       <div class="vz-sp-result">
-        <div class="vz-sp-num">350 万+</div>
+        <div class="vz-sp-num">1,060 万+</div>
         <div class="vz-sp-title">组合任务空间</div>
-        <div class="vz-sp-line">规模乘法增长</div>
+        <div class="vz-sp-line">多维扩展达十亿级</div>
       </div>
     </div>
     <div class="vz-sp-pick">
@@ -771,6 +779,29 @@ function agVizTraj(v) {
       ${v.scale.map(([k, val]) => `<div class="vz-traj-s"><div class="n">${esc(val)}</div><div class="t">${esc(k)}</div></div>`).join('')}
     </div>
   </div>`;
+}
+
+/* V5 · 三类异构子任务并行泳道 */
+function agVizLanes(v) {
+  return `<div class="vz-lanes">${v.lanes.map(([title, stat, steps]) => `
+    <div class="vz-lane">
+      <div class="vz-lane-title">${esc(title)}</div>
+      <div class="vz-lane-stat">${esc(stat)}</div>
+      <div class="vz-lane-steps">${steps.map(([label, st]) => `<span class="vz-lane-step ${st}">${esc(label)}</span>`).join('')}</div>
+    </div>`).join('')}</div>`;
+}
+
+/* V5 · 高价值任务筛选漏斗（宽度按 √ 值映射，避免悬殊数量级压扁） */
+function agVizFunnel(v) {
+  const vals = v.rows.map((r) => parseFloat(r[1]));
+  const max = Math.sqrt(Math.max(...vals));
+  return `<div class="vz-funnel">${v.rows.map(([label, val], i) => `
+    <div class="vz-funnel-row">
+      <span class="vz-funnel-label">${esc(label)}</span>
+      <span class="vz-funnel-track"><span class="vz-funnel-fill" style="width:${Math.max(10, Math.round((Math.sqrt(vals[i]) / max) * 100))}%"></span></span>
+      <span class="vz-funnel-val">${esc(val)}</span>
+      ${i < v.rows.length - 1 ? '<span class="vz-funnel-arrow">↓</span>' : ''}
+    </div>`).join('')}</div>`;
 }
 
 /* ══ 4. 挂载：路由联动 + 首次启动 ═══════════════════════════════ */

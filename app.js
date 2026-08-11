@@ -4322,7 +4322,7 @@ function renderLogin(mode) {
       <span class="sb-mark serif" style="width:40px;height:40px;font-size:18px">AI</span>
       <div>
         <div class="auth-name serif">AI SECURITY RANGE</div>
-        <div class="auth-sub">AI 安全攻防演练平台 · Agent-Native 演示版</div>
+        <div class="auth-sub">书安 · AI 原生安全攻防演练场</div>
       </div>
     </div>
     <div class="card auth-card">

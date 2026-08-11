@@ -686,3 +686,39 @@ body #view { margin-left: 0 !important; }
   70% { transform: scale(1.22); opacity: 0; }
   100% { transform: scale(1.22); opacity: 0; }
 }
+
+/* ══ V5 · 书安场图对焦：榜单背书 / 三泳道 / 筛选漏斗 ══ */
+.ag-cred {
+  display: flex; gap: 8px; flex-wrap: wrap; align-items: center;
+  margin: 2px 0 18px;
+}
+.ag-cred-item {
+  font-size: 11.5px; color: var(--muted-foreground);
+  border: 1px solid var(--border); border-radius: 99px; padding: 4px 11px;
+  background: var(--background);
+}
+.ag-cred-item b { color: var(--primary); font-weight: 600; }
+.ag-cred-note { font-size: 10.5px; color: var(--muted-foreground); opacity: .75; margin-left: auto; }
+
+/* 三类异构子任务 · 并行泳道 */
+.vz-lanes { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
+.vz-lane { border: 1px solid var(--border); border-radius: var(--radius); padding: 10px 12px; background: var(--background); }
+.vz-lane-title { font-size: 12px; font-weight: 600; margin-bottom: 2px; }
+.vz-lane-stat { font-family: var(--font-mono); font-size: 11px; color: var(--primary); margin-bottom: 8px; }
+.vz-lane-steps { display: flex; flex-wrap: wrap; gap: 5px; }
+.vz-lane-step {
+  font-size: 10.5px; border: 1px solid var(--border); border-radius: 99px; padding: 2px 8px;
+  color: var(--muted-foreground);
+}
+.vz-lane-step.ok { color: var(--chart-3); border-color: var(--chart-3); }
+.vz-lane-step.warn { color: var(--chart-4); border-color: var(--chart-4); }
+
+/* 高价值任务筛选漏斗 */
+.vz-funnel { display: flex; flex-direction: column; gap: 4px; }
+.vz-funnel-row { display: flex; align-items: center; gap: 10px; position: relative; }
+.vz-funnel-label { width: 128px; flex: none; font-size: 11.5px; color: var(--muted-foreground); text-align: right; }
+.vz-funnel-track { flex: 1; height: 18px; background: var(--background); border-radius: 3px; overflow: hidden; }
+.vz-funnel-fill { display: block; height: 100%; background: var(--chart-1); border-radius: 3px; }
+.vz-funnel-row:last-child .vz-funnel-fill { background: var(--chart-3); }
+.vz-funnel-val { width: 64px; flex: none; font-family: var(--font-mono); font-size: 12px; font-weight: 600; }
+.vz-funnel-arrow { position: absolute; left: 50%; bottom: -9px; font-size: 9px; color: var(--muted-foreground); opacity: .6; }
