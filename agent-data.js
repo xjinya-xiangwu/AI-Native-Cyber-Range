@@ -529,3 +529,108 @@ function agScenarioFor(tpl, taskText) {
   });
   return sc;
 }
+
+/* ══ V6 · 多轮对话建任务向导（AI 引导：类型 → 对象 → Agent → 约束 → 确认） ══
+ * 手工创建向导（TT-01~08 / TR-01）保留在功能页；这里是对话式入口。
+ * 演示任务卡带预设答案（preset），用户逐轮确认或改选，最后摘要确认后执行。 */
+const AG_WIZARD = {
+  test: {
+    kindLabel: '测试任务',
+    intro: '明白，建立测试任务。我按「类型 → 评测对象 → 执行 Agent → 安全约束」四步引导，逐轮确认即可。',
+    steps: [
+      {
+        key: 'type', q: '第 1 步 · 任务类型：评测任务（纯代码评测，选测试题集）还是靶场任务（靶场环境评测）？二选一。',
+        options: [
+          { id: 'range', label: '靶场任务', desc: '真实靶场环境 · 拓扑点亮 · 事件流' },
+          { id: 'eval', label: '评测任务', desc: '测试题集 · 编排进度 · 执行日志' },
+        ],
+      },
+      {
+        key: 'target',
+        qBy: { range: '第 2 步 · 选靶场环境（详情可在靶场大厅查看，返回不丢配置）：', eval: '第 2 步 · 选测试题集（管理员上传维护，只读可选）：' },
+        optionsBy: {
+          range: [
+            { id: 'govcloud', label: '异构政务云', desc: '3 套环境联动 · 34 节点' },
+            { id: 'cross', label: '跨区互联靶场', desc: '红队授权网段 · 5 条红线' },
+            { id: 'ics', label: '工控仿真', desc: '物理 AI 场景 · 维护窗口外可用' },
+          ],
+          eval: [
+            { id: 'cybergym', label: 'CyberGym 漏洞挖掘', desc: '500 题 · 含 120 道高难度' },
+            { id: 'patcheval', label: 'PatchEval 漏洞修复', desc: '320 题 · 补丁回归' },
+            { id: 'red24', label: '红队对抗题库', desc: '24 套 · 6,842 题' },
+          ],
+        },
+      },
+      {
+        key: 'agent', q: '第 3 步 · 选执行模型 / Agent：内置托管直接可选；外部接入仅展示网关校验成功对象。',
+        options: [
+          { id: 'mythos', label: 'mythos-attack-v2.2 · 内置', desc: '平台托管 · 攻击编排' },
+          { id: 'hunter', label: 'vuln-hunter-v1.8 · 内置', desc: '平台托管 · 漏洞挖掘' },
+          { id: 'ext', label: '外部接入 Agent', desc: '网关已校验 2 个 · 列表联动' },
+        ],
+      },
+      {
+        key: 'budget', q: '第 4 步 · 安全约束：四项上限提交前确认，选一版方案。',
+        options: [
+          { id: 'std', label: '标准方案', desc: 'Token 20 万 · 工具 60 次 · ¥200 · 45min' },
+          { id: 'tight', label: '从严', desc: 'Token 8 万 · 工具 30 次 · ¥80 · 20min' },
+          { id: 'loose', label: '从宽', desc: 'Token 50 万 · 工具 120 次 · ¥500 · 90min' },
+        ],
+      },
+    ],
+    tplFor: (a) => (a.target === 'cross' ? 'redteam' : 'complex'),
+    summaryFor: (a, L) => `新建测试任务：${L('type')} · ${L('target')} · ${L('agent')} · 约束${L('budget')}`,
+  },
+  train: {
+    kindLabel: '训练任务',
+    intro: '明白，建立训练任务。我按「训练类型 → 数据集 → 基座模型 → 资源」四步引导，逐轮确认即可。',
+    steps: [
+      {
+        key: 'ttype', q: '第 1 步 · 训练类型：',
+        options: [
+          { id: 'rl', label: 'RL 强化学习', desc: '攻防轨迹反哺 · 推荐' },
+          { id: 'sft', label: 'SFT 监督微调', desc: '标注样本 · 快速对齐' },
+          { id: 'dpo', label: 'DPO 偏好优化', desc: '研判偏好对 · 风格校准' },
+          { id: 'cpt', label: 'CPT 继续预训练', desc: '领域语料扩训' },
+        ],
+      },
+      {
+        key: 'data', q: '第 2 步 · 训练数据集（含规模）：',
+        options: [
+          { id: 'dctraj', label: 'DC-TRAJ-2608', desc: '~9,000 条长链路轨迹 · 难度带 22%~40%' },
+          { id: 'full', label: '全量样本 15,240 条', desc: '开源 10,240 + 自研 5,000' },
+          { id: 't3', label: '仅 T3+ 高难度样本', desc: '2,137 条' },
+        ],
+      },
+      {
+        key: 'base', q: '第 3 步 · 基座模型：',
+        options: [
+          { id: 'v22', label: 'mythos-attack-v2.2', desc: '最新回流版本 · 推荐' },
+          { id: 'v21', label: 'mythos-attack-v2.1', desc: '稳定基线' },
+        ],
+      },
+      {
+        key: 'res', q: '第 4 步 · 资源与时长：',
+        options: [
+          { id: '24h', label: '8×H100 · 24 小时', desc: '标准窗口' },
+          { id: '12h', label: '8×H100 · 12 小时', desc: '快速验证' },
+          { id: '48h', label: '8×H100 · 48 小时', desc: '完整训练' },
+        ],
+      },
+    ],
+    tplFor: () => 'loop',
+    summaryFor: (a, L) => `新建训练任务：${L('ttype')} · ${L('data')} · 基座 ${L('base')} · ${L('res')}`,
+  },
+};
+
+/* 演示任务卡的向导预设：逐轮已预填，用户确认或改选 */
+const AG_WIZARD_PRESETS = {
+  complex: { kind: 'test', answers: { type: 'range', target: 'govcloud', agent: 'mythos', budget: 'std' } },
+  redteam: { kind: 'test', answers: { type: 'range', target: 'cross', agent: 'mythos', budget: 'std' } },
+  loop: { kind: 'train', answers: { ttype: 'rl', data: 'dctraj', base: 'v22', res: '24h' } },
+};
+
+/* 自由文本意图识别（mock）：训练关键词 → 训练向导，否则测试向导 */
+function agWizardKindFor(text) {
+  return /训练|微调|强化学习|RL|SFT|DPO|数据集|基座/i.test(text || '') ? 'train' : 'test';
+}

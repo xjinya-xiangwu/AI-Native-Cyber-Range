@@ -3670,6 +3670,12 @@ function renderTraining() {
     renderTraining();
   }));
   $('#trn-new').addEventListener('click', openTrainingWizard);
+  const trnAiBtn = $('#trn-ai');
+  if (trnAiBtn) trnAiBtn.addEventListener('click', () => {
+    if (typeof agOpenDialog !== 'function') return;
+    agOpenDialog('我要新建一个训练任务');
+    later(() => { const g = $('#ag-go'); if (g) g.click(); }, 80);
+  });
   $$('[data-trn]').forEach((b) => b.addEventListener('click', () => {
     const [act, idx] = b.dataset.trn.split(':');
     const t = trnState.tasks[Number(idx)];
@@ -5995,7 +6001,10 @@ function renderTasks() {
         <h2 class="page-title">任务中心 ${helpTip('测试任务的总览与入口：置顶的演示任务基于真实靶场环境持续运行，与态势感知首页的演示场景同源，点击「详情」可查看完整运行过程；运行中队列按创建时间降序展示，下方为已完成任务列表。')}</h2>
         <p class="page-desc">测试任务的创建、队列与结果总览 · 评测任务 / 靶场任务统一入口</p>
       </div>
-      <button class="btn btn-primary" id="btn-new-task">新建测试任务</button>
+      <div style="display:flex;gap:8px">
+        <button class="btn btn-outline" id="btn-ai-task">✦ AI 对话创建</button>
+        <button class="btn btn-primary" id="btn-new-task">新建测试任务</button>
+      </div>
     </div>
     <div class="stats-row">
       <div class="card"><div class="card-sub">运行中</div><div class="stat-num" style="color:var(--primary)">${runningN}</div></div>
@@ -6025,6 +6034,12 @@ function renderTasks() {
   </div>`;
 
   $('#btn-new-task').addEventListener('click', () => openTaskWizard());
+  const aiTaskBtn = $('#btn-ai-task');
+  if (aiTaskBtn) aiTaskBtn.addEventListener('click', () => {
+    if (typeof agOpenDialog !== 'function') return;
+    agOpenDialog('我要新建一个测试任务');
+    later(() => { const g = $('#ag-go'); if (g) g.click(); }, 80);
+  });
   $('#tq-q').addEventListener('input', (e) => { tqState.q = e.target.value; renderTasks(); const el = $('#tq-q'); el.focus(); el.setSelectionRange(el.value.length, el.value.length); });
   $$('[data-tq-f]').forEach((c) => c.addEventListener('click', () => { tqState.filter = c.dataset.tqF; renderTasks(); }));
   $$('[data-tq-detail]').forEach((b) => b.addEventListener('click', () => {
@@ -6244,7 +6259,10 @@ function renderTraining() {
         <h2 class="page-title">任务中心 ${helpTip('模型训练任务的创建与管理：5 步向导创建训练任务；置顶的演示任务与态势感知首页的训练面板同源，点击「实时监控」可查看训练大屏；列表实时展示运行 / 排队 / 完成 / 评估状态，可暂停或终止。')}</h2>
         <p class="page-desc">训练任务的创建、调度与结果总览 · 进度实时跳动</p>
       </div>
-      <button class="btn btn-primary" id="trn-new">新建训练任务</button>
+      <div style="display:flex;gap:8px">
+        <button class="btn btn-outline" id="trn-ai">✦ AI 对话创建</button>
+        <button class="btn btn-primary" id="trn-new">新建训练任务</button>
+      </div>
     </div>
     <div class="stats-row" style="grid-template-columns:repeat(5,1fr)">
       <div class="card"><div class="card-sub">任务总数</div><div class="stat-num">${trnState.tasks.length}</div></div>
@@ -6327,6 +6345,12 @@ function renderTraining() {
     renderTraining();
   }));
   $('#trn-new').addEventListener('click', openTrainingWizard);
+  const trnAiBtn = $('#trn-ai');
+  if (trnAiBtn) trnAiBtn.addEventListener('click', () => {
+    if (typeof agOpenDialog !== 'function') return;
+    agOpenDialog('我要新建一个训练任务');
+    later(() => { const g = $('#ag-go'); if (g) g.click(); }, 80);
+  });
   $$('[data-trn]').forEach((b) => b.addEventListener('click', () => {
     const [act, idx] = b.dataset.trn.split(':');
     const t = trnState.tasks[Number(idx)];

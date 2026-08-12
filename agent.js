@@ -17,10 +17,21 @@ function agMountSummon() {
   const root = $('#agent-root');
   if (!root) return;
   root.innerHTML = '';
-  document.body.classList.toggle('arena-mode', agRoute() === 'arena');
+  const r = agRoute();
+  document.body.classList.toggle('arena-mode', r === 'arena');
+  /* V6 · 全局侧边导航恢复：执行页内自动收拢为细轨，离开后还原用户原状态 */
+  const sb = $('#sidebar');
+  if (sb && sessionStorage.getItem('cr-auth') === '1') {
+    if (r === 'arena') {
+      if (sb.dataset.arenaPrev === undefined) sb.dataset.arenaPrev = sb.classList.contains('collapsed') ? '1' : '0';
+      sb.classList.add('collapsed');
+    } else if (sb.dataset.arenaPrev !== undefined) {
+      sb.classList.toggle('collapsed', sb.dataset.arenaPrev === '1');
+      delete sb.dataset.arenaPrev;
+    }
+  }
   const authed = sessionStorage.getItem('cr-auth') === '1';
   if (!authed) return;
-  const r = agRoute();
   if (!AG_ORB_ROUTES.includes(r)) return;
 
   /* 悬浮球 */
@@ -31,19 +42,6 @@ function agMountSummon() {
     <button class="ag-orb" id="ag-orb" aria-label="打开 AI 编排引擎" title="AI 编排引擎"><span class="ag-orb-spark">✦</span></button>`;
   root.appendChild(wrap);
   $('#ag-orb').addEventListener('click', () => agOpenDialog());
-
-  /* V3 · 悬浮工具条：无全局导航后的返回与主题入口 */
-  const util = document.createElement('div');
-  util.className = 'ag-util';
-  util.innerHTML = `
-    ${r !== 'dashboard' ? '<button class="ag-util-btn" id="ag-back" title="返回态势感知">‹ 态势感知</button>' : ''}
-    <button class="ag-util-btn" id="ag-theme" title="切换深/浅主题">${document.documentElement.classList.contains('dark') ? '◑' : '◐'}</button>`;
-  root.appendChild(util);
-  const bk = $('#ag-back'); if (bk) bk.addEventListener('click', () => { location.hash = '#/dashboard'; });
-  $('#ag-theme').addEventListener('click', (e) => {
-    $('#theme-toggle').click(); /* 隐藏侧边栏中的原开关仍承担切换逻辑 */
-    e.currentTarget.textContent = document.documentElement.classList.contains('dark') ? '◑' : '◐';
-  });
 
   /* 态势感知顶栏注入入口 */
   if (r === 'dashboard') {
@@ -81,7 +79,7 @@ function agShowBubble() {
     <div class="ag-bubble-chips">
       <button class="ag-chip-btn" data-say="对异构政务云环境发起多 Agent 协同渗透演练">渗透异构政务云</button>
       <button class="ag-chip-btn" data-say="授权红队 Agent 对跨区互联环境发起自主渗透">发起自动化红队</button>
-      <button class="ag-chip-btn" data-href="#/arena?tpl=loop">轨迹训练新模型</button>
+      <button class="ag-chip-btn" data-say="用长链路攻防轨迹数据训练新一代渗透 Agent">轨迹训练新模型</button>
     </div>`;
   root.appendChild(el);
   $('#ag-bubble-x').addEventListener('click', (e) => { e.stopPropagation(); el.remove(); });
@@ -123,7 +121,7 @@ function agOpenDialog(prefill) {
         <button class="btn btn-primary" id="ag-go">开始演练 →</button>
       </div>
     </div>
-    <div class="ag-section-label">三条作战轨迹 · 从一次完整演练开始</div>
+    <div class="ag-section-label">三个演示任务 · 从一次完整演练开始</div>
     <div class="ag-tpl-grid">
       ${AG_TEMPLATES.map((t) => `
       <button class="ag-tpl" data-tpl="${t.id}">
@@ -131,15 +129,6 @@ function agOpenDialog(prefill) {
         <div class="ag-tpl-desc">${t.desc}</div>
         <div class="ag-tpl-tags">${t.tags.map((g) => `<span class="badge">${g}</span>`).join('')}<span class="ag-tpl-go">进入 →</span></div>
       </button>`).join('')}
-    </div>
-    <div class="ag-section-label">最近会话 · 可累积的资产</div>
-    <div class="ag-recent">
-      ${AG_RECENT.map((r) => `<a class="ag-recent-row" href="${r.href}"><span style="color:var(--primary)">↻</span><span class="ag-recent-title">${r.title}</span><span class="ag-recent-meta">${r.meta}</span></a>`).join('')}
-    </div>
-    <div class="ag-section-label">接入环境 · 网关在线</div>
-    <div class="ag-env">
-      ${['政务云 VPC', '工控仿真', '跨区互联靶场', '8×H100 算力池 · 空闲 6'].map((e) => `<span class="vz-chip ok">${e}</span>`).join('')}
-      <a class="ag-env-link" href="#/gateway">管理接入 →</a>
     </div>
   </div>`;
   root.appendChild(ov);
@@ -149,18 +138,123 @@ function agOpenDialog(prefill) {
   document.addEventListener('keydown', function onEsc(e) {
     if (e.key === 'Escape') { close(); document.removeEventListener('keydown', onEsc); }
   });
-  $$('.ag-tpl', ov).forEach((b) => b.addEventListener('click', () => {
-    location.hash = '#/arena?tpl=' + b.dataset.tpl;
-  }));
-  $$('.ag-recent-row', ov).forEach((a) => a.addEventListener('click', () => ov.remove()));
-  $$('.ag-env-link', ov).forEach((a) => a.addEventListener('click', () => ov.remove()));
+  $$('.ag-tpl', ov).forEach((b) => b.addEventListener('click', () => agWizardStart(ov, b.dataset.tpl)));
   $('#ag-go').addEventListener('click', () => {
     const v = $('#ag-text').value.trim();
-    if (!v) { showToast('描述一个目标，或选择下方技术亮点模板'); $('#ag-text').focus(); return; }
-    location.hash = '#/arena?tpl=auto&task=' + encodeURIComponent(v);
+    if (!v) { showToast('描述一个目标，或选择下方演示任务'); $('#ag-text').focus(); return; }
+    agWizardStart(ov, 'auto', v);
   });
   const ta = $('#ag-text');
   ta.focus(); ta.setSelectionRange(ta.value.length, ta.value.length);
+}
+
+/* ══ 2b. 多轮对话建任务向导（V6）：AI 逐轮引导 → 摘要确认 → 进入执行页 ══ */
+function agWizardStart(ov, tplId, freeText) {
+  const preset = AG_WIZARD_PRESETS[tplId] || null;
+  const kind = preset ? preset.kind : agWizardKindFor(freeText);
+  const cfg = AG_WIZARD[kind];
+  const st = {
+    ov, cfg, kind, idx: 0,
+    answers: preset ? { ...preset.answers } : {},
+    presetAnswers: preset ? preset.answers : {},
+    tplSource: tplId,
+  };
+  const dlg = $('.ag-dialog', ov);
+  dlg.classList.add('ag-dialog-chat');
+  dlg.innerHTML = `
+    <button class="ag-dialog-close" id="ag-x" aria-label="关闭">✕</button>
+    <div class="ag-dialog-kicker">AGENT ORCHESTRATOR · 对话式任务创建</div>
+    <div class="wz-body" id="wz-body"></div>
+    <div class="wz-foot">演示环境 · 选项式多轮对话（mock 编排）· 手工创建向导保留在任务中心 / 训练任务页</div>`;
+  $('#ag-x').addEventListener('click', () => ov.remove());
+  if (freeText) agWizardPush('user', freeText);
+  else if (preset) {
+    const t = AG_TEMPLATES.find((x) => x.id === tplId);
+    agWizardPush('user', `发起演示任务：${t ? t.title : tplId}（参数已按模板预填）`);
+  }
+  later(() => {
+    agWizardPush('ai', cfg.intro + (preset ? '各轮已按模板预填推荐项，点击即可确认，也可改选。' : ''));
+    later(() => agWizardAsk(st), 320);
+  }, 260);
+}
+
+function agWizardPush(who, text) {
+  const body = $('#wz-body');
+  if (!body) return null;
+  const el = document.createElement('div');
+  el.className = who === 'user' ? 'wz-user' : 'wz-ai';
+  el.innerHTML = who === 'user' ? esc(text) : `<span class="wz-ava">✦</span><div class="wz-text">${esc(text)}</div>`;
+  body.appendChild(el);
+  body.scrollTop = body.scrollHeight;
+  return el;
+}
+
+function agWizardOptsFor(step, answers) {
+  if (step.optionsBy) return step.optionsBy[answers.type] || [];
+  return step.options;
+}
+
+function agWizardAsk(st) {
+  const step = st.cfg.steps[st.idx];
+  if (!step) return agWizardSummary(st);
+  const q = step.qBy ? step.qBy[st.answers.type] : step.q;
+  agWizardPush('ai', q);
+  const body = $('#wz-body');
+  const box = document.createElement('div');
+  box.className = 'wz-opts';
+  box.innerHTML = agWizardOptsFor(step, st.answers).map((o) => {
+    const isPreset = st.presetAnswers[step.key] === o.id;
+    return `<button class="wz-opt${isPreset ? ' preset' : ''}" data-oid="${o.id}">
+      <span class="wz-opt-label">${esc(o.label)}${isPreset ? '<span class="wz-opt-tag">已预填 · 点击确认</span>' : ''}</span>
+      <span class="wz-opt-desc">${esc(o.desc)}</span>
+    </button>`;
+  }).join('');
+  body.appendChild(box);
+  body.scrollTop = body.scrollHeight;
+  box.querySelectorAll('.wz-opt').forEach((b) => b.addEventListener('click', () => {
+    const o = agWizardOptsFor(step, st.answers).find((x) => x.id === b.dataset.oid);
+    st.answers[step.key] = o.id;
+    box.querySelectorAll('.wz-opt').forEach((x) => { x.disabled = true; x.classList.toggle('chosen', x === b); });
+    agWizardPush('user', o.label + ' · ' + o.desc);
+    st.idx += 1;
+    later(() => agWizardAsk(st), 360);
+  }));
+}
+
+function agWizardLabelOf(st, key) {
+  const step = st.cfg.steps.find((s) => s.key === key);
+  const o = agWizardOptsFor(step, st.answers).find((x) => x.id === st.answers[key]);
+  return o ? o.label : st.answers[key];
+}
+
+function agWizardSummary(st) {
+  const L = (k) => agWizardLabelOf(st, k);
+  const summary = st.cfg.summaryFor(st.answers, L);
+  agWizardPush('ai', '配置齐了，请确认。点击「确认并执行」后任务进入队列并直接打开执行详情：');
+  const body = $('#wz-body');
+  const card = document.createElement('div');
+  card.className = 'wz-summary';
+  card.innerHTML = `
+    <div class="wz-sum-kicker">配置摘要 · ${st.cfg.kindLabel}</div>
+    ${st.cfg.steps.map((s) => `<div class="wz-sum-row"><span class="k">${esc((s.qBy ? '评测对象' : s.q.replace(/^第 \d 步 · /, '').replace(/：.*$/, '')))}</span><span class="v">${esc(L(s.key))}</span></div>`).join('')}
+    <div class="wz-sum-acts">
+      <button class="btn btn-primary btn-sm" id="wz-confirm">✓ 确认并执行</button>
+      <button class="btn btn-ghost btn-sm" id="wz-restart">↻ 重新选择</button>
+    </div>`;
+  body.appendChild(card);
+  body.scrollTop = body.scrollHeight;
+  $('#wz-confirm').addEventListener('click', () => {
+    location.hash = '#/arena?tpl=' + st.cfg.tplFor(st.answers) + '&task=' + encodeURIComponent(summary);
+  });
+  $('#wz-restart').addEventListener('click', () => {
+    const src = st.tplSource;
+    st.ov.remove();
+    later(() => {
+      agOpenDialog();
+      const ov = $('#ag-overlay');
+      if (ov) agWizardStart(ov, src || 'auto', src ? undefined : '重新创建任务');
+    }, 60);
+  });
 }
 
 /* ══ 3. 思维画布执行页（arena）══════════════════════════════════ */
@@ -212,41 +306,46 @@ function renderArena() {
       </div>
     </div>
     <div class="ar-main">
-      <div class="ar-stream" id="ar-stream"><div class="ar-stream-inner" id="ar-stream-inner"></div></div>
-      <div class="ar-canvas">
-        <div class="ar-canvas-head">
-          <span class="ar-canvas-title">思维画布</span>
-          <span class="badge">${sc.stages.length} 阶段 · ${AG_TRACK_CN[sc.track]}</span>
-          <div class="ar-canvas-ctl">
-            <button class="ar-zoom" id="ar-zoom-out" title="缩小">−</button>
-            <span class="ar-zoom-val" id="ar-zoom-val">100%</span>
-            <button class="ar-zoom" id="ar-zoom-in" title="放大">＋</button>
-            <button class="btn btn-ghost btn-sm ar-expand-btn" id="ar-expand">全部展开</button>
-          </div>
+      <aside class="ar-rail ar-rail-l collapsed" id="ar-rail-task">
+        <button class="arl-toggle" id="arl-task-toggle" title="展开任务中心">»</button>
+        <span class="arl-vlabel">任务中心</span>
+        <div class="arl-body">
+          <div class="arl-kicker">本任务 · 任务中心</div>
+          <div class="arl-code">${sc.code} <span class="badge badge-primary">${AG_TRACK_CN[sc.track]}</span></div>
+          ${sc.stages.map((s, i) => `
+          <button class="arl-row" id="rail-stg-${i}" data-stg="${i}" title="${esc(s.title)}">
+            <span class="arl-dot">${s.no}</span>
+            <span class="arl-name">${esc(s.title)}</span>
+            ${(sc.gates || []).some((g) => g.stage === i) ? '<span class="arl-gate">⚑</span>' : ''}
+            <span class="arl-state" data-state>待执行</span>
+          </button>`).join('')}
         </div>
-        <div class="ar-canvas-body">
-          <div class="ar-canvas-scale" id="ar-canvas-scale">
-            <div class="stg-list">
-              ${sc.stages.map((s, i) => `
-              <div class="stg" id="stg-${i}" data-stg="${i}">
-                <span class="stg-dot">${s.no}</span>
-                <div class="stg-card">
-                  <div class="stg-head">
-                    <span class="stg-no">${s.no}</span>
-                    <span class="stg-title">${s.title}</span>
-                    ${(sc.gates || []).some((g) => g.stage === i) ? '<span class="stg-gate-badge">⚑ 人工研判</span>' : ''}
-                    <span class="stg-state" data-state>待执行</span>
-                  </div>
-                  <div class="stg-sub">${s.sub}</div>
-                  <div class="stg-summary">${s.summary}</div>
-                  <div class="stg-chips">${s.chips.map((c) => `<span class="badge">${c}</span>`).join('')}</div>
-                  <ul class="stg-detail">${s.detail.map((d) => `<li>${d}</li>`).join('')}</ul>
-                </div>
-              </div>`).join('')}
-            </div>
-          </div>
+      </aside>
+      <div class="ar-stream" id="ar-stream"><div class="ar-stream-inner" id="ar-stream-inner"></div></div>
+      <div class="ar-panel" id="ar-panel">
+        <div class="ar-panel-head">
+          <span class="ar-panel-title">结构化画布</span>
+          <span class="small muted">模块随推理推进逐个浮现</span>
+          <span class="badge" id="ar-panel-count">0 模块</span>
+        </div>
+        <div class="ar-panel-body" id="ar-panel-body">
+          <div class="ar-panel-empty" id="ar-panel-empty">⬡ 推理产生的拓扑、评分、证据等结构化模块将在这里沉淀</div>
         </div>
       </div>
+      <aside class="ar-rail ar-rail-r collapsed" id="ar-rail-asset">
+        <button class="arl-toggle" id="arl-asset-toggle" title="展开资产中心">«</button>
+        <span class="arl-vlabel">资产中心</span>
+        <div class="arl-body">
+          <div class="arl-kicker">本任务 · 资产中心</div>
+          ${(sc.report ? sc.report.assets : []).map(([name, meta], ai) => `
+          <button class="arl-row arl-asset" data-ai="${ai}" title="${esc(name)} · ${esc(meta)}">
+            <span class="arl-dot">◇</span>
+            <span class="arl-name">${esc(name)}</span>
+            <span class="arl-state" data-ast-state>○ 产出中</span>
+            <span class="arl-meta">${esc(meta)}</span>
+          </button>`).join('') || '<div class="arl-empty">本任务暂无登记资产</div>'}
+        </div>
+      </aside>
     </div>
     <div class="ar-ask">
       <div class="ar-ask-inner">
@@ -270,7 +369,10 @@ function renderArena() {
     play.schedule.push({ at, fn: () => agStageStart(sc, i) });
     const gap = Math.max(900, Math.floor(s.dur * 0.72 / Math.max(1, s.events.length)));
     s.events.forEach((ev, j) => {
-      play.schedule.push({ at: at + 500 + gap * j, fn: () => agStreamAppend(agEventHtml(ev)) });
+      play.schedule.push({ at: at + 500 + gap * j, fn: () => {
+        if (ev.t === 'tool') { agStreamAppend(agToolRefHtml(ev)); agPanelAdd(ev, i); }
+        else agStreamAppend(agEventHtml(ev));
+      } });
     });
     at += s.dur;
     play.schedule.push({ at: at - 500, fn: () => agStageDone(sc, i) });
@@ -319,27 +421,36 @@ function renderArena() {
   $('#ar-replay').addEventListener('click', () => renderArena());
   $('#ar-new').addEventListener('click', () => agOpenDialog());
   $('#ar-review').addEventListener('click', () => agReviewOverlay(sc));
-  /* V3 · 页面融入执行流：#/confirm 深链改为流内复核视图；工具卡可展开实时监控 */
+  /* V6 · 页面融入执行流：#/confirm 深链改为流内复核视图；结构化画布的监控卡可展开实时监控 */
   $('#ar-stream').addEventListener('click', (e) => {
     const a = e.target.closest('a[href="#/confirm"]');
-    if (a) { e.preventDefault(); agReviewOverlay(sc); return; }
+    if (a) { e.preventDefault(); agReviewOverlay(sc); }
+  });
+  $('#ar-panel').addEventListener('click', (e) => {
     if (e.target.closest('.as-tool-xp')) agLiveOverlay(sc);
   });
-  $$('.stg-card').forEach((c) => c.addEventListener('click', () => c.closest('.stg').classList.toggle('open')));
-  let zoom = 1;
-  const setZoom = (z) => {
-    zoom = Math.min(1.3, Math.max(0.7, z));
-    $('#ar-canvas-scale').style.transform = `scale(${zoom})`;
-    $('#ar-canvas-scale').style.width = (100 / zoom) + '%';
-    $('#ar-zoom-val').textContent = Math.round(zoom * 100) + '%';
-  };
-  $('#ar-zoom-in').addEventListener('click', () => setZoom(zoom + 0.1));
-  $('#ar-zoom-out').addEventListener('click', () => setZoom(zoom - 0.1));
-  $('#ar-expand').addEventListener('click', () => {
-    const openAll = $$('.stg.open').length < sc.stages.length;
-    $$('.stg').forEach((s) => s.classList.toggle('open', openAll));
-    $('#ar-expand').textContent = openAll ? '全部收起' : '全部展开';
+  /* V6 · 左右折叠边栏：任务中心（左）/ 资产中心（右），默认折叠 */
+  const railTask = $('#ar-rail-task'), railAsset = $('#ar-rail-asset');
+  $('#arl-task-toggle').addEventListener('click', () => {
+    const c = railTask.classList.toggle('collapsed');
+    $('#arl-task-toggle').textContent = c ? '»' : '«';
+    $('#arl-task-toggle').title = c ? '展开任务中心' : '收起任务中心';
   });
+  $('#arl-asset-toggle').addEventListener('click', () => {
+    const c = railAsset.classList.toggle('collapsed');
+    $('#arl-asset-toggle').textContent = c ? '«' : '»';
+    $('#arl-asset-toggle').title = c ? '展开资产中心' : '收起资产中心';
+  });
+  railTask.querySelectorAll('.arl-row').forEach((b) => b.addEventListener('click', () => {
+    const mod = $(`#ar-panel-body [data-stg="${b.dataset.stg}"]`);
+    if (mod) { mod.scrollIntoView({ behavior: 'smooth', block: 'nearest' }); mod.classList.add('flash'); later(() => mod.classList.remove('flash'), 900); }
+  }));
+  railAsset.querySelectorAll('.arl-asset').forEach((b) => b.addEventListener('click', () => {
+    const kind = (sc.report.assets[+b.dataset.ai] || [])[2];
+    if (kind === 'data') { location.hash = '#/data'; return; }
+    if (kind === 'model') { location.hash = '#/models'; return; }
+    showToast('演示环境：已加入导出队列，完成后可在数据中心取件');
+  }));
 
   /* ── 追问（按当前任务上下文 mock 应答） ── */
   const ask = () => {
@@ -391,7 +502,7 @@ function agTickHeader(play, sc) {
 
 function agStageStart(sc, i) {
   const s = sc.stages[i];
-  const el = $('#stg-' + i);
+  const el = $('#rail-stg-' + i);
   if (!el) return;
   el.classList.add('active');
   $('[data-state]', el).textContent = '● 执行中';
@@ -414,7 +525,7 @@ function agStageStart(sc, i) {
   }
 }
 function agStageDone(sc, i) {
-  const el = $('#stg-' + i);
+  const el = $('#rail-stg-' + i);
   if (!el) return;
   el.classList.remove('active'); el.classList.add('done');
   $('[data-state]', el).textContent = '✓ 完成';
@@ -432,7 +543,7 @@ function agGateShow(play, g) {
   play.gateWait = true;
   window.__agGateShown = (window.__agGateShown || 0) + 1;
   const st = $('#ar-status'); if (st) st.textContent = '⏸ 等待人工研判';
-  const stg = $('#stg-' + g.stage);
+  const stg = $('#rail-stg-' + g.stage);
   if (stg) stg.classList.add('gated');
   const id = 'gate-' + g.id + '-' + window.__agGateShown;
   agStreamAppend(`
@@ -470,50 +581,51 @@ function agFinale(sc) {
       <a class="btn btn-ghost btn-sm" href="#/tasks">返回任务中心</a>
     </div>
   </div>`);
-  /* V2 · 跑完才出现：任务级导航（本任务的任务中心 + 资产中心）与画布报告卡 */
-  agTaskNav(sc);
+  /* V6 · 收尾：右侧资产中心各项标记已沉淀；结构化画布末尾生成任务报告卡 */
+  $$('#ar-rail-asset [data-ast-state]').forEach((el) => { el.textContent = '✓ 已沉淀'; });
+  $$('#ar-rail-asset .arl-asset').forEach((el) => el.classList.add('done'));
   agReportCard(sc);
 }
 
-/* V3 · 任务级导航：只保留「任务中心 + 资产中心」，默认折叠为细轨，点击展开 */
-function agTaskNav(sc) {
-  const main = $('.ar-main');
-  if (!main || $('#ar-tasknav')) return;
-  const r = sc.report || { assets: [] };
-  const nav = document.createElement('aside');
-  nav.className = 'ar-tasknav collapsed'; nav.id = 'ar-tasknav';
-  nav.innerHTML = `
-    <button class="atn-toggle" id="atn-toggle" title="展开任务面板">»</button>
-    <div class="atn-kicker">任务已沉淀 · 可累积的资产</div>
-    <div class="atn-code">${sc.code} <span class="badge badge-primary">${AG_TRACK_CN[sc.track]}</span></div>
-    <div class="atn-group">本任务 · 任务中心</div>
-    ${sc.stages.map((s, i) => `<button class="atn-row atn-stg" data-stg="${i}" title="${esc(s.title)}"><span class="atn-dot">${s.no}</span><span class="atn-name">${esc(s.title)}</span><span class="atn-ck">✓</span></button>`).join('')}
-    <div class="atn-group">资产中心</div>
-    ${r.assets.map(([name, meta], i) => `<button class="atn-row atn-asset" data-ai="${i}" title="${esc(name)} · ${esc(meta)}"><span class="atn-dot">◇</span><span class="atn-name">${esc(name)}</span><span class="atn-meta">${esc(meta)}</span></button>`).join('')}`;
-  main.prepend(nav);
-  main.classList.add('has-nav');
-  $('#atn-toggle').addEventListener('click', () => {
-    const collapsed = nav.classList.toggle('collapsed');
-    $('#atn-toggle').textContent = collapsed ? '»' : '«';
-    $('#atn-toggle').title = collapsed ? '展开任务面板' : '收起任务面板';
-  });
-  nav.querySelectorAll('.atn-stg').forEach((b) => b.addEventListener('click', () => {
-    const stg = $('#stg-' + b.dataset.stg);
-    if (stg) { stg.classList.add('open'); stg.scrollIntoView({ behavior: 'smooth', block: 'nearest' }); }
-  }));
-  nav.querySelectorAll('.atn-asset').forEach((b) => b.addEventListener('click', () => {
-    const kind = r.assets[+b.dataset.ai][2];
-    if (kind === 'data') { location.hash = '#/data'; return; }
-    if (kind === 'model') { location.hash = '#/models'; return; }
-    showToast('演示环境：已加入导出队列，完成后可在数据中心取件');
-  }));
+/* V6 · 结构化画布：工具产物以模块卡形式在右侧面板逐个浮现 */
+function agPanelAdd(ev, stgIdx) {
+  const body = $('#ar-panel-body');
+  if (!body) return;
+  const empty = $('#ar-panel-empty'); if (empty) empty.remove();
+  const card = document.createElement('div');
+  card.className = 'ap-mod' + (ev.expand ? ' as-tool-xp' : '');
+  card.dataset.stg = stgIdx;
+  card.innerHTML = `
+    <div class="ap-mod-head">
+      <span class="as-tool-ico">⚙</span>
+      <span class="as-tool-name">${esc(ev.name)}</span>
+      <span class="ap-mod-title">${esc(ev.title)}</span>
+      ${ev.expand ? '<span class="as-tool-xp-hint">⤢ 展开实时监控</span>' : ''}
+      <span class="ap-mod-stg">STAGE ${sc_stg_no(stgIdx)}</span>
+      <span class="as-tool-status">✓ 完成</span>
+    </div>
+    <div class="as-tool-body">${agViz(ev.viz)}</div>
+    ${ev.foot && ev.foot.length ? `<div class="as-tool-foot">${ev.foot.map((f) => `<span class="badge">${esc(f)}</span>`).join('')}</div>` : ''}`;
+  body.appendChild(card);
+  card.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+  const cnt = $('#ar-panel-count');
+  if (cnt) cnt.textContent = body.querySelectorAll('.ap-mod').length + ' 模块';
+}
+function sc_stg_no(i) {
+  const el = $('#rail-stg-' + i + ' .arl-dot');
+  return el ? el.textContent : String(i + 1).padStart(2, '0');
 }
 
-/* V2 · 画布末尾任务报告卡：结论可读，下一步可直接发起 AI 交互 */
+/* V6 · 执行流中的工具引用行：推理流保持叙事，产物去右侧画布 */
+function agToolRefHtml(ev) {
+  return `<div class="as-toolref">⚙ 调用 <b>${esc(ev.name)}</b> · ${esc(ev.title)} <span class="as-toolref-ck">✓</span><span class="as-toolref-hint">→ 已沉淀到结构化画布</span></div>`;
+}
+
+/* V6 · 画布末尾任务报告卡：沉淀在结构化画布底部，下一步可直接发起 AI 交互 */
 function agReportCard(sc) {
   const r = sc.report;
-  const list = $('.stg-list');
-  if (!r || !list) return;
+  const body = $('#ar-panel-body');
+  if (!r || !body) return;
   const rp = document.createElement('div');
   rp.className = 'ar-report'; rp.id = 'ar-report';
   rp.innerHTML = `
@@ -521,7 +633,7 @@ function agReportCard(sc) {
     <div class="ar-report-head"><span class="ar-report-title">${esc(r.title)}</span><span class="ar-report-score">${esc(r.score)}</span></div>
     <ul class="ar-report-lines">${r.lines.map((l) => `<li>${esc(l)}</li>`).join('')}</ul>
     <div class="ar-report-acts">${r.actions.map((a, i) => `<button class="ar-report-act${a.primary ? ' primary' : ''}" data-ai="${i}">${esc(a.label)}</button>`).join('')}</div>`;
-  list.appendChild(rp);
+  body.appendChild(rp);
   rp.querySelectorAll('.ar-report-act').forEach((b) => b.addEventListener('click', () => {
     const a = r.actions[+b.dataset.ai];
     if (a.kind === 'go') { location.hash = a.href; return; }
