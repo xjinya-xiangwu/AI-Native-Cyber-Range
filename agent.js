@@ -103,13 +103,6 @@ function agOpenDialog(prefill) {
     <button class="ag-dialog-close" id="ag-x" aria-label="关闭">✕</button>
     <div class="ag-dialog-kicker">AGENT ORCHESTRATOR · 作战回路入口</div>
     <div class="ag-dialog-title">描述一个目标，<em>Agent 编队</em>完成剩下的</div>
-    <div class="ag-dialog-sub">攻击、防御、评测、训练的执行体都是 Agent · 推理、代价与证据全程可见 · 轨迹沉淀回流训练</div>
-    <div class="ag-cred">
-      <span class="ag-cred-item">CyberGym 漏洞挖掘 <b>90.84%</b> · 国内第一</span>
-      <span class="ag-cred-item">PatchEval 漏洞修复 <b>43.48%</b> · 总榜第一</span>
-      <span class="ag-cred-item">ExploitGym 漏洞利用 <b>64</b> 个 · 总榜第四</span>
-      <span class="ag-cred-note">书安攻防智能体 DoGNAVY · 匿名参赛成绩</span>
-    </div>
     <div class="ag-input-box">
       <textarea class="ag-input" id="ag-text" placeholder="描述一个演练目标、一个评测假设，或直接粘贴一段威胁情报……">${prefill ? esc(prefill) : ''}</textarea>
       <div class="ag-input-foot">

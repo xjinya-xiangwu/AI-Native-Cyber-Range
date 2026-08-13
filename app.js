@@ -4329,6 +4329,7 @@ function renderLogin(mode) {
       <div>
         <div class="auth-name serif">AI SECURITY RANGE</div>
         <div class="auth-sub">书安 · AI 原生安全攻防演练场</div>
+        <div class="auth-cred">书安攻防智能体 DoGNAVY 匿名参赛：CyberGym 90.84% 国内第一 · PatchEval 43.48% 总榜第一 · ExploitGym 64 个总榜第四<span class="auth-cred-note">演示口径 · 极小字注记</span></div>
       </div>
     </div>
     <div class="card auth-card">

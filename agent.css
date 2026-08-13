@@ -843,3 +843,7 @@
   .ar-rail.collapsed { width: 44px; box-shadow: none; }
   .ar-rail:not(.collapsed) { width: 248px; }
 }
+
+/* ══ V6.1 · 登录页榜单注脚（对话框精简后落点，极小字） ══ */
+.auth-cred { margin-top: 6px; font-size: 10px; line-height: 1.7; color: var(--muted-foreground); max-width: 340px; }
+.auth-cred-note { display: block; opacity: .7; }
