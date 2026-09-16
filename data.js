@@ -152,14 +152,22 @@
         { id: 'P6', name: '状态对比与回放', detail: '对比基线、受攻击态和恢复态并封装场景', deliverable: '攻防回放包' }
       ],
       topology: ['演练控制面', '红队仿真器', '企业 IT 区', '安全监测区', '工业控制孪生', '状态与事件总线'],
+      twinAssets: [
+        { id: 'TWIN-CTRL', kind: 'command', name: '演练控制中心', zone: '安全运营区', status: '健康', detail: '承载演练编排、授权闸门、回滚检查点和评分控制。', telemetry: 'Run 01 · 4 条编排策略' },
+        { id: 'TWIN-SOC', kind: 'soc', name: 'SOC 研判中心', zone: '安全运营区', status: '监测中', detail: '关联 SIEM、EDR 与流量探针，对异常事件生成研判队列。', telemetry: '27 条遥测 / 分钟' },
+        { id: 'TWIN-IT', kind: 'datacenter', name: '企业数据中心', zone: 'IT 生产区', status: '受控', detail: '模拟应用集群、身份服务、数据库与边界网关的生产依赖。', telemetry: '18 台虚拟资产 · 3 条风险路径' },
+        { id: 'TWIN-OT', kind: 'factory', name: '工业控制单元', zone: 'OT 生产区', status: '稳定', detail: '模拟 PLC、HMI、工程站与工艺状态；关键控制回路受保护。', telemetry: '6 类工艺指标 · 82% 业务保持' },
+        { id: 'TWIN-EDGE', kind: 'gateway', name: '边缘接入网关', zone: 'DMZ / 边缘区', status: '告警', detail: '模拟业务入口、协议转发、策略执行与可疑指令检测。', telemetry: '2 条异常指令待研判' },
+        { id: 'TWIN-RED', kind: 'operator', name: '红队仿真节点', zone: '授权攻击区', status: '受控', detail: '仅注入预置、可回放的授权攻击动作，不连接真实网络。', telemetry: '场景 ATK-03 · 4 个阶段' }
+      ],
       events: [
         { id: 'EV-001', type: 'PLAN', time: '00:00', stage: 0, tool: 'Exercise Director', title: '冻结红蓝规则与胜负条件', detail: '攻击窗口、业务保护线、终止阈值和评分指标已确认。', status: '完成' },
         { id: 'EV-002', type: 'ACTION', time: '01:25', stage: 1, tool: 'Twin Synchronizer', title: '同步拓扑与业务状态', detail: '资产、通信关系、控制逻辑和观测探针已装载。', status: '完成' },
         { id: 'EV-003', type: 'EVIDENCE', time: '04:10', stage: 1, tool: 'Baseline Calibrator', title: '完成可信基线校准', detail: '正常流量、控制状态和关键业务指标进入稳定区间。', status: '完成' },
         { id: 'EV-004', type: 'ACTION', time: '06:30', stage: 2, tool: 'Attack Injector', title: '注入授权攻击场景', detail: '在仿真器中按阶段生成入口、横向和控制扰动事件。', status: '完成' },
-        { id: 'EV-005', type: 'OBSERVATION', time: '08:18', stage: 3, tool: 'Blue Sensor Mesh', title: '检测到跨域异常与控制偏差', detail: '两类告警已关联到同一攻击轨迹，业务保护线尚未突破。', status: '风险' },
-        { id: 'EV-006', type: 'QUESTION', time: '08:25', stage: 3, tool: 'Containment Gate', title: '是否执行跨域隔离策略？', detail: '隔离可阻断攻击，但可能短时影响模拟生产节拍。', status: '等待确认', gate: 'risk' },
-        { id: 'EV-007', type: 'INTERVENTION', time: '08:42', stage: 3, tool: 'Blue Commander', title: '批准分区隔离与降级运行', detail: '保持关键控制回路，切断非必要跨域通信。', status: '完成' },
+        { id: 'EV-005', type: 'OBSERVATION', time: '08:18', stage: 3, tool: 'Blue Sensor Mesh', title: '检测到异常控制指令与业务偏差', detail: '两类告警已关联到同一攻击轨迹，业务保护线尚未突破。', status: '风险' },
+        { id: 'EV-006', type: 'QUESTION', time: '08:25', stage: 3, tool: 'Safety Gate', title: '是否执行受控降载与策略加固？', detail: '该动作保持关键控制回路，以最小影响抑制模拟风险扩散。', status: '等待确认', gate: 'risk' },
+        { id: 'EV-007', type: 'INTERVENTION', time: '08:42', stage: 3, tool: 'Blue Commander', title: '批准受控降载与策略加固', detail: '保持关键控制回路，启用安全策略加固和受控降载。', status: '完成' },
         { id: 'EV-008', type: 'EVIDENCE', time: '12:05', stage: 4, tool: 'Resilience Monitor', title: '攻击被遏制并进入恢复阶段', detail: '关键业务最低保持 82%，模拟恢复时间 6 分 20 秒。', status: '完成' },
         { id: 'EV-009', type: 'ACTION', time: '15:22', stage: 5, tool: 'State Comparator', title: '对比基线、攻击态与恢复态', detail: '拓扑、配置、业务指标和防护策略差异已归档。', status: '完成' },
         { id: 'EV-010', type: 'RESULT', time: '17:11', stage: 5, tool: 'Replay Packager', title: '生成数字孪生攻防回放包', detail: '红蓝轨迹、状态快照、韧性指标和场景配置已封装。', status: '完成' }
@@ -180,7 +188,10 @@
     scenario.assets = scenario.outputs.map((output, index) => ({
       id: `${scenario.id}-A${index + 1}`,
       ...output,
-      source: `TASK-${scenario.id} → RUN-01`
+      source: `TASK-${scenario.id} → RUN-01`,
+      trace: scenario.events.slice(Math.max(0, index * 2), Math.min(scenario.events.length, index * 2 + 5)).map((event) => ({
+        time: event.time, type: event.type, tool: event.tool, title: event.title, detail: event.detail
+      }))
     }));
   });
 
