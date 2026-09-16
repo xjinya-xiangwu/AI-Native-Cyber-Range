@@ -6,7 +6,7 @@
   const $$ = (selector, root = document) => [...root.querySelectorAll(selector)];
   const esc = (value = '') => String(value).replace(/[&<>'"]/g, (char) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;', '"': '&quot;' }[char]));
   const saved = JSON.parse(localStorage.getItem('frontier-demo-state') || '{}');
-  const stateVersion = 7;
+  const stateVersion = 8;
 
   const initialState = {
     selectedScenarioId: defaultScenarioId,
@@ -112,7 +112,7 @@
 
   function renderConversationAnchor() {
     const active = !['home', 'completed'].includes(state.phase);
-    return `<div class="conversation-anchor"><div><small>任务目标</small><p>${esc(state.prompt)}</p></div><div class="anchor-intervention"><textarea id="intervention-input" rows="2" placeholder="输入验证重点、优先级或约束；将实时同步到执行画布"></textarea><button class="ghost-button" id="submit-intervention">干预执行 →</button></div><small class="anchor-note">${active ? '对话干预不会改变已建立的授权边界。' : '任务建立后可在此持续输入干预。'}</small></div>`;
+    return `<div class="conversation-anchor"><div><small>任务目标</small><p>${esc(state.prompt)}</p></div><div class="anchor-intervention"><textarea id="intervention-input" rows="2" placeholder="输入验证重点、优先级或约束；将实时同步到执行画布"></textarea><button class="ghost-button" id="submit-intervention">干预执行 →</button>${active ? '<button class="fast-forward-button" id="fast-forward">快进至产出 ⏩</button>' : ''}</div><small class="anchor-note">${active ? '对话干预不会改变已建立的授权边界；也可直接快进查看最终产出。' : '任务已完成，可继续补充复盘意见。'}</small></div>`;
   }
 
   function reasoningSummary(event) {
@@ -143,9 +143,16 @@
   function renderClarification() { return ''; }
 
 
+  function reasoningTrace(event) {
+    const constraint = event.type === 'PLAN' ? '检索已冻结的范围、授权和停止条件，不扩大任务边界。' : '复核当前动作仍符合建立阶段确认的最小权限与环境隔离约束。';
+    const evidence = event.type === 'OBSERVATION' || event.type === 'EVIDENCE' ? `关联观测与运行记录：${event.detail}` : `读取工具回显与环境状态：${event.tool}。`;
+    const judgment = event.type === 'RESULT' ? '完成结果归并，生成可回指的报告与数据集产出。' : `形成当前判断：${event.title}。`;
+    return [constraint, evidence, judgment];
+  }
+
   function renderExecutionStream() {
     const current = scenario();
-    return `<article class="reasoning-feed"><div class="reasoning-feed-head"><span>过程推理</span><em>${state.phase === 'completed' ? `${current.events.length} 条完成` : `${state.eventIndex + 1} / ${current.events.length}`}</em></div>${current.events.slice(0, state.eventIndex + 1).map((event) => `<article class="reasoning-event ${state.selectedEvent === event.id ? 'selected' : ''}" data-event="${event.id}"><div><span>${esc(event.type)}</span><time>${esc(event.time)}</time></div><h3>${esc(event.title)}</h3><p>${esc(reasoningSummary(event))}</p><small>依据：${esc(event.tool)} · ${esc(event.detail)}</small></article>`).join('')}</article>`;
+    return `<article class="reasoning-feed"><div class="reasoning-feed-head"><span>LLM 推理流</span><em>${state.phase === 'completed' ? `${current.events.length} 条完成` : `${state.eventIndex + 1} / ${current.events.length}`}</em></div><div class="reasoning-disclaimer">展示的是面向演示的可审查推理轨迹与依据，不包含模型隐藏思维链。</div>${current.events.slice(0, state.eventIndex + 1).map((event, index, items) => `<article class="reasoning-stream ${state.selectedEvent === event.id ? 'selected' : ''} ${index === items.length - 1 && state.phase === 'running' ? 'is-streaming' : ''}" data-event="${event.id}"><header><span>${esc(event.type)}</span><time>${esc(event.time)}</time><code>${esc(event.tool)}</code></header>${reasoningTrace(event).map((line, lineIndex) => `<p style="--line:${lineIndex}"><i>›</i>${esc(line)}</p>`).join('')}<footer>输出：${esc(event.title)}</footer></article>`).join('')}</article>`;
   }
 
   function renderRiskGate() { return ''; }
@@ -198,20 +205,37 @@
     return `<div class="workspace-section"><div class="artifact-title"><div><span>02</span><h2>长轨迹与 Trace 数据生产管线</h2></div><em>${progress} / 6 阶段</em></div><p class="workspace-lead">每个计划、动作、观测、工具回显、人工决策、失败分支和环境状态都进入同一条可追溯生产管线。</p><div class="pipeline-flow">${current.pipeline.map((item, index) => `<div class="pipeline-stage ${index < progress ? 'done' : ''} ${index === progress && progress < 6 ? 'active' : ''}"><div class="pipeline-index">${index < progress ? '✓' : index + 1}</div><div><b>${esc(item.name)}</b><small>${esc(item.owner)}</small><p><span>输入</span>${esc(item.input)}</p><p><span>输出</span>${index < progress || state.phase === 'completed' ? esc(item.output) : '等待上游'}</p></div></div>`).join('<i class="pipeline-arrow">→</i>')}</div><div class="trace-panel"><div class="section-heading"><div><span>实时 Trace 样例</span><small>计划—动作—观测—决策—结果保持上下文连续</small></div><em>${current.metrics.toolCalls} 次工具调用</em></div>${traceEvents.length ? traceEvents.map((event) => `<div class="trace-row"><code>${esc(event.time)}</code><span>${esc(event.type)}</span><b>${esc(event.tool)}</b><p>${esc(event.title)}</p></div>`).join('') : '<div class="empty-workspace">任务启动后显示实时 Trace。</div>'}</div><div class="lineage-card"><div class="section-label">数据血缘</div><div class="lineage-chain"><span>${taskId()}</span><i>→</i><span>RUN-01</span><i>→</i><span>TRACE / EVENT</span><i>→</i><span>DATASET</span></div><p>任务 → Run → 事件 → 工具回显 → 环境快照 → 标注 → 数据包，全链可回指。</p></div><div class="data-kpis"><span><b>${progress >= 1 ? current.metrics.traces : '—'}</b>轨迹事件</span><span><b>${progress >= 2 ? current.metrics.evidence : '—'}</b>运行记录</span><span><b>${progress >= 4 ? current.metrics.review : '—'}</b>待复核</span><span><b>${progress >= 6 ? current.metrics.datasets : '—'}</b>数据类型</span></div></div>`;
   }
 
-  function assetExport(asset) { return encodeURIComponent(JSON.stringify({ asset_id: asset.id, type: asset.type, task: taskId(), state: asset.state, source: asset.source, usage: asset.usage, trace: asset.trace }, null, 2)); }
+  function reportMarkdown(asset) {
+    const current = scenario();
+    const generatedAt = '2026-09-16';
+    const findings = asset.trace.slice(0, 3).map((row, index) => `| F-${String(index + 1).padStart(2, '0')} | ${row.title} | ${row.tool} | ${row.type} | 已核验 |`).join('\n');
+    const methodology = current.plan.map((step, index) => `${index + 1}. **${step.name}**：${step.detail}`).join('\n');
+    return `# 网络安全评估报告\n\n> **报告编号：** ${taskId()}-${asset.id}  \n> **生成日期：** ${generatedAt}  \n> **任务类型：** ${current.type}  \n> **环境：** ${current.environment}  \n> **报告状态：** 演示仿真数据 / 已归档\n\n---\n\n## 1. 执行摘要\n\n本报告针对 **${current.subject}** 的 ${current.type} 任务进行受控评估。结论基于隔离环境中的工具回显、环境快照、运行记录与复核轨迹生成；不代表真实生产系统的安全结论。\n\n**本次交付：** ${asset.type}（${asset.count}）。\n\n## 2. 范围与交战规则\n\n- 测试对象：${current.subject}\n- 执行环境：${current.environment}\n- 边界：仅授权、隔离、可回滚环境；禁止真实账号、生产凭据、持久化及无约束破坏动作。\n- 权限确认：最小权限、允许动作、停止条件与留痕要求已在任务建立阶段冻结。\n\n## 3. 方法与执行过程\n\n${methodology}\n\n## 4. 关键发现与证据\n\n| 编号 | 发现 / 结论 | 证据来源 | 类型 | 状态 |\n|---|---|---|---|---|\n${findings}\n\n## 5. 风险判断与建议\n\n1. 将当前验证结论与可核验运行记录一并纳入后续复测基线。\n2. 对高风险或低置信观察保留人工复核入口，并持续沉淀失败恢复样本。\n3. 在下一轮受控演练中复用本报告关联的环境快照和数据集，验证修复或防护效果。\n\n## 6. 可追溯性与限制\n\n- Trace 引用：${asset.trace.map((row) => row.time + ' ' + row.tool).join('；')}。\n- 本报告采用公开安全测试报告常见的范围、方法、发现、证据、风险与建议结构。\n- 所有内容为演示仿真数据，仅用于产品演示、训练与评测流程说明。\n`;
+  }
+
+  function assetExport(asset) {
+    return asset.category === 'report' ? encodeURIComponent(reportMarkdown(asset)) : encodeURIComponent(JSON.stringify({ asset_id: asset.id, type: asset.type, category: asset.category, task: taskId(), state: asset.state, source: asset.source, usage: asset.usage, trace: asset.trace }, null, 2));
+  }
+
+  function assetHref(asset) { return `data:${asset.category === 'report' ? 'text/markdown' : 'application/json'};charset=utf-8,${assetExport(asset)}`; }
+  function assetFilename(asset) { return `${asset.id}-${asset.category === 'report' ? 'report.md' : 'trace.json'}`; }
+
+  function renderReportPreview(asset) {
+    const current = scenario();
+    return `<section class="report-preview"><div class="report-banner"><span>NETWORK SECURITY ASSESSMENT REPORT</span><b>${esc(asset.type)}</b><small>${taskId()} · 演示仿真数据</small></div><section><h3>执行摘要</h3><p>针对 ${esc(current.subject)} 的 ${esc(current.type)} 任务，在 ${esc(current.environment)} 中完成受控评估。${esc(asset.count)} 已归档，全部结论可回指到运行记录与 Trace。</p></section><section><h3>范围与方法</h3><ul><li>授权范围、最小权限、允许动作和停止条件已在任务建立阶段冻结。</li><li>执行过程遵循 ${esc(current.plan.map((step) => step.name).join(' → '))}。</li></ul></section><section><h3>关键证据</h3><table><thead><tr><th>时间</th><th>工具</th><th>结论</th></tr></thead><tbody>${asset.trace.slice(0,3).map((row)=>`<tr><td>${esc(row.time)}</td><td>${esc(row.tool)}</td><td>${esc(row.title)}</td></tr>`).join('')}</tbody></table></section><section><h3>建议</h3><ol><li>将本次证据与结论纳入复测基线。</li><li>对低置信观察继续保留人工复核与数据回流。</li></ol></section><details><summary>查看原始 Markdown</summary><pre>${esc(reportMarkdown(asset))}</pre></details></section>`;
+  }
+
   function renderAssetDetail(asset) {
     if (!asset) return '';
-    return `<section class="asset-detail"><div><div><span>Trace 详情</span><h3>${esc(asset.type)}</h3><p>${esc(asset.count)} · ${esc(asset.usage)}</p></div><button id="close-asset-detail">×</button></div><div class="asset-trace">${asset.trace.map((row) => `<article><code>${esc(row.time)}</code><span>${esc(row.type)}</span><b>${esc(row.tool)}</b><p>${esc(row.title)}</p><small>${esc(row.detail)}</small></article>`).join('')}</div><a class="primary-button asset-download" download="${esc(asset.id)}-trace.json" href="data:application/json;charset=utf-8,${assetExport(asset)}">导出 Trace JSON ↓</a></section>`;
+    const report = asset.category === 'report';
+    return `<div class="asset-modal-backdrop"><section class="asset-modal ${report ? 'report-modal' : ''}" role="dialog" aria-modal="true" aria-label="资产详情"><header><div><span>${report ? '报告产出 · Markdown 预览' : '数据集产出 · Trace 详情'}</span><h2>${esc(asset.type)}</h2><p>${esc(asset.count)} · ${esc(asset.usage)}</p></div><button id="close-asset-detail">×</button></header>${report ? renderReportPreview(asset) : `<div class="asset-trace">${asset.trace.map((row) => `<article><code>${esc(row.time)}</code><span>${esc(row.type)}</span><b>${esc(row.tool)}</b><p>${esc(row.title)}</p><small>${esc(row.detail)}</small></article>`).join('')}</div>`}<a class="primary-button asset-download" download="${assetFilename(asset)}" href="${assetHref(asset)}">${report ? '下载 Markdown 报告 ↓' : '导出 Trace JSON ↓'}</a></section></div>`;
   }
-  function assetExport(asset) { return encodeURIComponent(JSON.stringify({ asset_id: asset.id, type: asset.type, category: asset.category, task: taskId(), state: asset.state, source: asset.source, usage: asset.usage, trace: asset.trace }, null, 2)); }
-  function renderAssetDetail(asset) {
-    if (!asset) return '';
-    return `<div class="asset-modal-backdrop"><section class="asset-modal" role="dialog" aria-modal="true" aria-label="资产详情"><header><div><span>${asset.category === 'report' ? '报告产出' : '数据集产出'} · Trace 详情</span><h2>${esc(asset.type)}</h2><p>${esc(asset.count)} · ${esc(asset.usage)}</p></div><button id="close-asset-detail">×</button></header><div class="asset-trace">${asset.trace.map((row) => `<article><code>${esc(row.time)}</code><span>${esc(row.type)}</span><b>${esc(row.tool)}</b><p>${esc(row.title)}</p><small>${esc(row.detail)}</small></article>`).join('')}</div><a class="primary-button asset-download" download="${esc(asset.id)}-trace.json" href="data:application/json;charset=utf-8,${assetExport(asset)}">导出 Trace JSON ↓</a></section></div>`;
-  }
+
   function renderAssetGroup(current, category, title, subtitle) {
     const assets=current.assets.filter((asset) => asset.category === category);
-    return `<section class="asset-group"><div><span>${title}</span><small>${subtitle}</small></div>${assets.map((asset) => `<article class="asset-card"><button class="asset-open" data-asset="${esc(asset.id)}"><div><span>${esc(asset.id)}</span><em>${state.phase === 'completed' ? esc(asset.state) : '生成中'}</em></div><h3>${esc(asset.type)}</h3><p>${esc(asset.count)} · ${esc(asset.usage)}</p><small>点击查看 Trace</small></button><a class="asset-download" download="${esc(asset.id)}-trace.json" href="data:application/json;charset=utf-8,${assetExport(asset)}">导出 JSON ↓</a></article>`).join('')}</section>`;
+    return `<section class="asset-group"><div><span>${title}</span><small>${subtitle}</small></div>${assets.map((asset) => `<article class="asset-card"><button class="asset-open" data-asset="${esc(asset.id)}"><div><span>${esc(asset.id)}</span><em>${state.phase === 'completed' ? esc(asset.state) : '生成中'}</em></div><h3>${esc(asset.type)}</h3><p>${esc(asset.count)} · ${esc(asset.usage)}</p><small>点击查看 ${category === 'report' ? 'Markdown 报告' : 'Trace'}</small></button><a class="asset-download" download="${assetFilename(asset)}" href="${assetHref(asset)}">${category === 'report' ? '下载 MD ↓' : '导出 JSON ↓'}</a></article>`).join('')}</section>`;
   }
+
   function renderAssets() {
     const current=scenario(), drawer=$('#asset-drawer'); const detail=current.assets.find((asset) => asset.id === state.assetDetail);
     drawer.innerHTML=`<div class="drawer-head"><div><span>资产空间</span><small>按任务归档的报告与数据集</small></div><button id="close-assets">×</button></div><div class="drawer-task"><small>来源任务</small><b>${taskId()}</b><span>${esc(phaseLabel())}</span></div>${renderAssetGroup(current,'report','报告产出','结论、评估、复测与场景报告')}${renderAssetGroup(current,'dataset','数据集产出','轨迹、运行记录、样本与回放数据')}<div class="drawer-foot">演示数据 · 项目隔离 · 用途授权独立 · 导出受控</div>`;
@@ -221,7 +245,7 @@
   }
 
   function bindStudio() {
-    $('#reset-task').addEventListener('click', resetDemo); $('#show-assets')?.addEventListener('click', toggleAssets); $('#open-assets')?.addEventListener('click', toggleAssets); $('#open-data')?.addEventListener('click', () => switchTab('data'));
+    $('#reset-task').addEventListener('click', resetDemo); $('#show-assets')?.addEventListener('click', toggleAssets); $('#open-assets')?.addEventListener('click', toggleAssets); $('#open-data')?.addEventListener('click', () => switchTab('data')); $('#fast-forward')?.addEventListener('click', fastForward);
     $('#submit-intervention')?.addEventListener('click', submitIntervention); $('#intervention-input')?.addEventListener('keydown',(event)=>{if((event.ctrlKey||event.metaKey)&&event.key==='Enter')submitIntervention();});
     $('#workspace-assets')?.addEventListener('click', toggleAssets);
     $$('[data-tab]').forEach((button) => button.addEventListener('click', () => switchTab(button.dataset.tab)));
@@ -236,6 +260,10 @@
     if (!text) return toast('请输入要同步到执行画布的干预内容');
     const current = currentEvent(); state.operatorInterventions.push({ id: `OP-${String(state.operatorInterventions.length + 1).padStart(2, '0')}`, time: current.time, text, response: `已关联到 ${current.id} · ${current.title}，执行画布将在当前里程碑下显示该约束。` });
     state.workspaceTab = 'canvas'; render(); toast('干预已写入运行记录并同步到执行画布');
+  }
+  function fastForward() {
+    if (state.phase === 'completed') return;
+    stopTimer(); state.eventIndex = scenario().events.length - 1; state.selectedEvent = scenario().events.at(-1).id; state.phase = 'completed'; state.playing = false; state.workspaceTab = 'data'; render(); toast('已快进至任务完成，可查看产出物');
   }
   function switchTab(tabName) { state.workspaceTab = tabName; render(); }
   function continueCreation() {
