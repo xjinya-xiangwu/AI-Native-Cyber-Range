@@ -1,49 +1,32 @@
 <!doctype html>
-<html lang="zh-CN" class="dark">
+<html lang="zh-CN">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta name="description" content="AI 攻防演练场 V1.4 前沿版领导演示">
+  <meta name="description" content="书安 AI-native 安全攻防演练场前沿版演示">
   <title>书安 · AI-native 安全攻防演练场</title>
   <link rel="icon" href="data:,">
-  <link rel="stylesheet" href="styles.css">
+  <link rel="stylesheet" href="styles.css?v=flow-v2">
 </head>
 <body>
-  <div id="app" class="app-shell">
-    <aside class="sidebar" id="sidebar">
-      <a class="brand" href="#/dashboard" aria-label="返回领导驾驶舱">
-        <span class="brand-mark">AI</span>
-        <span class="brand-copy"><b>书安</b><small>AI-NATIVE SECURITY RANGE</small></span>
-      </a>
-      <div class="demo-mode"><i></i><span>领导演示专版 · V1.4</span></div>
-      <nav class="nav" aria-label="演示导航">
-        <a href="#/dashboard" data-route="dashboard"><span>⌂</span>领导驾驶舱</a>
-        <a href="#/dialogue" data-route="dialogue"><span>✦</span>AI 任务对话</a>
-        <a href="#/workbench" data-route="workbench"><span>◌</span>Agent 执行工作台 <em id="run-badge">●</em></a>
-        <a href="#/data" data-route="data"><span>◇</span>数据生产中枢</a>
-        <a href="#/report" data-route="report"><span>▤</span>决策报告</a>
-      </nav>
-      <div class="sidebar-bottom">
-        <div class="safety-chip"><span>安全边界</span><b>仅数字孪生靶场</b></div>
-        <button class="scenario-switch" id="scenario-switch"><span class="scene-icon">S1</span><span><b id="scenario-title">云原生自主运维 Agent</b><small id="scenario-subtitle">SCN-01 · 仿真执行</small></span><i>⌄</i></button>
+  <div class="app-shell">
+    <header class="app-header">
+      <button class="brand" id="brand-home" aria-label="返回首页">
+        <span class="brand-symbol">安</span>
+        <span><b>书安</b><small>AI-NATIVE SECURITY RANGE</small></span>
+      </button>
+      <div class="global-flow" id="global-flow" aria-label="演示进度"></div>
+      <div class="header-actions">
+        <span class="run-state" id="run-state"></span>
+        <button class="header-button" id="asset-toggle">◇ 资产空间</button>
+        <button class="icon-button" id="reset-all" aria-label="重置演示">↻</button>
       </div>
-    </aside>
-    <section class="main-shell">
-      <header class="topbar">
-        <button class="menu-btn" id="menu-btn" aria-label="打开导航">☰</button>
-        <div class="breadcrumbs"><span>AI 攻防演练场</span><b>/</b><strong id="page-name">领导驾驶舱</strong></div>
-        <div class="top-actions">
-          <span class="mock-label"><i></i>演示数据 · 仿真执行</span>
-          <button class="quiet-btn" id="reset-demo">↻ 重置场景</button>
-          <button class="theme-btn" id="theme-btn" aria-label="切换主题">◐</button>
-        </div>
-      </header>
-      <main id="view" tabindex="-1"></main>
-    </section>
+    </header>
+    <main id="view"></main>
   </div>
-  <div id="modal-root"></div>
-  <div id="toast" class="toast" role="status" aria-live="polite"></div>
-  <script src="data.js"></script>
-  <script src="app.js"></script>
+  <aside class="asset-drawer" id="asset-drawer" aria-label="资产空间"></aside>
+  <div class="toast" id="toast" role="status" aria-live="polite"></div>
+  <script src="data.js?v=flow-v2"></script>
+  <script src="app.js?v=flow-v2"></script>
 </body>
 </html>
