@@ -4,13 +4,13 @@
   const commonPolicy = [
     '仅在授权、隔离的靶场或数字孪生环境执行',
     '禁止连接真实业务网络、真实账号与生产凭据',
-    '破坏性或越界动作必须经过人工闸门',
+    '破坏性或越界动作在建立阶段即被禁止，不进入自动执行队列',
     '完整保留工具回显、环境快照与停止原因'
   ];
 
   const commonCreation = (type, environment) => [
     { id: 'C1', tool: 'scope_parser', title: '解析任务范围与授权', result: `识别为${type}，提取目标、排除项和成功标准` },
-    { id: 'C2', tool: 'rules_of_engagement', title: '冻结交战规则', result: '绑定允许动作、停止条件、人工闸门和留痕要求' },
+    { id: 'C2', tool: 'boundary_validator', title: '确认权限边界与交战规则', result: '在建立阶段验证最小权限、允许动作、停止条件和留痕要求' },
     { id: 'C3', tool: 'range_orchestrator', title: '编排环境与工具', result: `装载${environment}、基线快照和最小工具集` },
     { id: 'C4', tool: 'security_agent_factory', title: '创建执行 Agent', result: '生成任务快照、里程碑与可恢复检查点' }
   ];
@@ -46,8 +46,8 @@
         { id: 'EV-002', type: 'ACTION', time: '00:42', stage: 1, tool: 'Range Snapshot', title: '建立环境基线与回滚点', detail: '记录版本、配置、测试数据与观测探针状态。', status: '完成' },
         { id: 'EV-003', type: 'ACTION', time: '03:10', stage: 2, tool: 'Surface Mapper', title: '完成资产与入口测绘', detail: '归并 Web、API、身份入口和关键依赖，未越出授权范围。', status: '完成' },
         { id: 'EV-004', type: 'OBSERVATION', time: '08:25', stage: 3, tool: 'Scanner + Fuzzer', title: '发现 7 个候选异常', detail: '其中 2 个涉及身份边界，需要低影响人工验证。', status: '待验证' },
-        { id: 'EV-005', type: 'QUESTION', time: '08:31', stage: 3, tool: 'Safety Gate', title: '高风险验证需要人工确认', detail: '继续使用最小化请求验证，不执行持久化、批量读取或破坏性动作。', status: '等待确认', gate: 'risk' },
-        { id: 'EV-006', type: 'INTERVENTION', time: '08:44', stage: 3, tool: 'Human Approval', title: '批准最小化验证', detail: '保持样本数据、单次请求和只读证据边界。', status: '完成' },
+        { id: 'EV-005', type: 'EVIDENCE', time: '08:31', stage: 3, tool: 'Boundary Verifier', title: '确认验证仍处于已建立权限边界内', detail: '建立阶段的最小权限、单次请求和只读证据约束持续生效。', status: '完成' },
+        { id: 'EV-006', type: 'ACTION', time: '08:44', stage: 3, tool: 'Minimal Verifier', title: '执行最小化证据验证', detail: '在已冻结的样本、请求频率和只读证据边界内自动完成验证。', status: '完成' },
         { id: 'EV-007', type: 'EVIDENCE', time: '14:20', stage: 4, tool: 'Evidence Correlator', title: '确认 3 个有效漏洞并完成去重', detail: '每项均关联请求回显、日志、版本和可达路径。', status: '完成' },
         { id: 'EV-008', type: 'REPLAN', time: '16:05', stage: 4, tool: 'Hypothesis Planner', title: '调整验证顺序', detail: '优先补齐高危发现的前置条件与反证，低危项进入后续队列。', status: '完成' },
         { id: 'EV-009', type: 'ACTION', time: '21:40', stage: 5, tool: 'Retest Builder', title: '生成复测基线与修复建议', detail: '将复现条件转换为非武器化回归检查。', status: '完成' },
@@ -83,8 +83,8 @@
         { id: 'EV-002', type: 'ACTION', time: '01:02', stage: 1, tool: 'Prerequisite Checker', title: '核验版本与配置前置条件', detail: '目标样本与漏洞条件匹配，外部依赖已替换为模拟服务。', status: '完成' },
         { id: 'EV-003', type: 'PLAN', time: '03:18', stage: 2, tool: 'Chain Planner', title: '生成最小化利用链', detail: '仅验证控制流与权限边界，不包含持久化和外传步骤。', status: '完成' },
         { id: 'EV-004', type: 'ACTION', time: '05:26', stage: 3, tool: 'Controlled Runner', title: '启动受控利用验证', detail: '运行在隔离容器和一次性测试数据上。', status: '完成' },
-        { id: 'EV-005', type: 'QUESTION', time: '05:48', stage: 3, tool: 'Impact Gate', title: '即将进入权限边界验证', detail: '继续将触达模拟敏感资源，但不会读取真实数据或建立持久化。', status: '等待确认', gate: 'risk' },
-        { id: 'EV-006', type: 'INTERVENTION', time: '06:03', stage: 3, tool: 'Human Approval', title: '批准隔离影响验证', detail: '限制为只读标记对象，并设置自动终止阈值。', status: '完成' },
+        { id: 'EV-005', type: 'EVIDENCE', time: '05:48', stage: 3, tool: 'Boundary Verifier', title: '确认受控利用未越出建立权限边界', detail: '模拟敏感资源仅用于标记验证，不读取真实数据或建立持久化。', status: '完成' },
+        { id: 'EV-006', type: 'ACTION', time: '06:03', stage: 3, tool: 'Impact Verifier', title: '执行自动化影响边界验证', detail: '按建立阶段设定的只读标记对象和自动终止阈值完成验证。', status: '完成' },
         { id: 'EV-007', type: 'EVIDENCE', time: '08:32', stage: 4, tool: 'Boundary Observer', title: '确认漏洞可利用但横向边界被阻断', detail: '权限提升在模拟命名空间内成立，跨域访问被策略拒绝。', status: '完成' },
         { id: 'EV-008', type: 'ACTION', time: '10:15', stage: 5, tool: 'Cleanup Verifier', title: '执行快照回滚与残留检查', detail: '临时会话、测试对象和工具容器均已销毁。', status: '完成' },
         { id: 'EV-009', type: 'EVIDENCE', time: '12:20', stage: 5, tool: 'Replay Builder', title: '生成攻击路径回放', detail: '保留阶段、工具、观测、人工决策和停止原因。', status: '完成' },
@@ -121,8 +121,8 @@
         { id: 'EV-003', type: 'OBSERVATION', time: '05:42', stage: 1, tool: 'Root Cause Analyzer', title: '定位到授权校验顺序缺陷', detail: '问题源于共享中间件的边界检查晚于资源解析。', status: '完成' },
         { id: 'EV-004', type: 'PLAN', time: '08:06', stage: 2, tool: 'Patch Planner', title: '比较三种修复方案', detail: '选择共享校验层最小补丁，避免在多个调用点重复打补丁。', status: '完成' },
         { id: 'EV-005', type: 'ACTION', time: '12:30', stage: 3, tool: 'Patch Agent', title: '生成补丁并通过静态检查', detail: '修改共享入口并补充一个安全回归用例。', status: '完成' },
-        { id: 'EV-006', type: 'QUESTION', time: '14:02', stage: 3, tool: 'Change Gate', title: '补丁涉及共享授权组件', detail: '需要确认是否进入完整业务回归，而非仅执行漏洞复测。', status: '等待确认', gate: 'risk' },
-        { id: 'EV-007', type: 'INTERVENTION', time: '14:19', stage: 4, tool: 'Release Owner', title: '批准完整安全与业务回归', detail: '增加关键调用链兼容性检查，发布时间预算 +8 分钟。', status: '完成' },
+        { id: 'EV-006', type: 'EVIDENCE', time: '14:02', stage: 3, tool: 'Boundary Verifier', title: '确认共享组件回归范围已在建立阶段冻结', detail: '变更影响、回归范围和发布约束已随任务建立过程完成确认。', status: '完成' },
+        { id: 'EV-007', type: 'ACTION', time: '14:19', stage: 4, tool: 'Regression Orchestrator', title: '自动执行完整安全与业务回归', detail: '按已冻结的关键调用链、兼容性检查和发布预算自动运行。', status: '完成' },
         { id: 'EV-008', type: 'EVIDENCE', time: '23:45', stage: 4, tool: 'Regression Runner', title: '原漏洞已阻断且核心回归通过', detail: '16 项安全与业务检查全部通过，未发现同类旁路。', status: '完成' },
         { id: 'EV-009', type: 'ACTION', time: '26:10', stage: 5, tool: 'Release Verifier', title: '核验修复制品与回滚策略', detail: '镜像签名、版本、监控项和回滚点一致。', status: '完成' },
         { id: 'EV-010', type: 'RESULT', time: '28:02', stage: 5, tool: 'Closure Builder', title: '关闭漏洞修复任务', detail: '补丁、根因、回归报告、发布核验和失败轨迹已归档。', status: '完成' }
@@ -166,8 +166,8 @@
         { id: 'EV-003', type: 'EVIDENCE', time: '04:10', stage: 1, tool: 'Baseline Calibrator', title: '完成可信基线校准', detail: '正常流量、控制状态和关键业务指标进入稳定区间。', status: '完成' },
         { id: 'EV-004', type: 'ACTION', time: '06:30', stage: 2, tool: 'Attack Injector', title: '注入授权攻击场景', detail: '在仿真器中按阶段生成入口、横向和控制扰动事件。', status: '完成' },
         { id: 'EV-005', type: 'OBSERVATION', time: '08:18', stage: 3, tool: 'Blue Sensor Mesh', title: '检测到异常控制指令与业务偏差', detail: '两类告警已关联到同一攻击轨迹，业务保护线尚未突破。', status: '风险' },
-        { id: 'EV-006', type: 'QUESTION', time: '08:25', stage: 3, tool: 'Safety Gate', title: '是否执行受控降载与策略加固？', detail: '该动作保持关键控制回路，以最小影响抑制模拟风险扩散。', status: '等待确认', gate: 'risk' },
-        { id: 'EV-007', type: 'INTERVENTION', time: '08:42', stage: 3, tool: 'Blue Commander', title: '批准受控降载与策略加固', detail: '保持关键控制回路，启用安全策略加固和受控降载。', status: '完成' },
+        { id: 'EV-006', type: 'ACTION', time: '08:25', stage: 3, tool: 'Resilience Orchestrator', title: '执行受控降载与策略加固', detail: '依据建立阶段冻结的业务保护线，自动保持关键控制回路并抑制风险扩散。', status: '完成' },
+        { id: 'EV-007', type: 'EVIDENCE', time: '08:42', stage: 3, tool: 'Policy Verifier', title: '确认降载与策略加固已生效', detail: '关键控制回路保持稳定，防护策略和降载阈值已写入运行记录。', status: '完成' },
         { id: 'EV-008', type: 'EVIDENCE', time: '12:05', stage: 4, tool: 'Resilience Monitor', title: '攻击被遏制并进入恢复阶段', detail: '关键业务最低保持 82%，模拟恢复时间 6 分 20 秒。', status: '完成' },
         { id: 'EV-009', type: 'ACTION', time: '15:22', stage: 5, tool: 'State Comparator', title: '对比基线、攻击态与恢复态', detail: '拓扑、配置、业务指标和防护策略差异已归档。', status: '完成' },
         { id: 'EV-010', type: 'RESULT', time: '17:11', stage: 5, tool: 'Replay Packager', title: '生成数字孪生攻防回放包', detail: '红蓝轨迹、状态快照、韧性指标和场景配置已封装。', status: '完成' }
@@ -185,14 +185,22 @@
   Object.values(scenarios).forEach((scenario) => {
     scenario.pipeline = commonPipeline;
     scenario.success = '任务结果、运行记录、长轨迹与可复用数据资产均可回指。';
-    scenario.assets = scenario.outputs.map((output, index) => ({
-      id: `${scenario.id}-A${index + 1}`,
-      ...output,
-      source: `TASK-${scenario.id} → RUN-01`,
-      trace: scenario.events.slice(Math.max(0, index * 2), Math.min(scenario.events.length, index * 2 + 5)).map((event) => ({
-        time: event.time, type: event.type, tool: event.tool, title: event.title, detail: event.detail
-      }))
-    }));
+    scenario.assets = scenario.outputs.map((output, index) => {
+      const category = index < 2 ? 'report' : 'dataset';
+      const datasetType = index === 2 ? '长轨迹与评测数据集' : '可核验运行记录数据集';
+      return {
+        id: `${scenario.id}-A${index + 1}`,
+        ...output,
+        type: category === 'report' ? output.type : datasetType,
+        count: category === 'report' ? output.count : (index === 2 ? `${scenario.metrics.traces} 个轨迹事件` : `${scenario.metrics.evidence} 个运行记录节点`),
+        usage: category === 'report' ? output.usage : (index === 2 ? '训练 / 评测 / 偏好优化' : '审计 / 回放 / 质量复核'),
+        category,
+        source: `TASK-${scenario.id} → RUN-01`,
+        trace: scenario.events.slice(Math.max(0, index * 2), Math.min(scenario.events.length, index * 2 + 5)).map((event) => ({
+          time: event.time, type: event.type, tool: event.tool, title: event.title, detail: event.detail
+        }))
+      };
+    });
   });
 
   const presets = Object.values(scenarios).map(({ id, tag, title, subtitle, prompt, type }) => ({ id, tag, title, subtitle, prompt, type }));
