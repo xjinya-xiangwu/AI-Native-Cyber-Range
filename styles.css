@@ -450,3 +450,9 @@ button { color: inherit; }
   .compact-tabs button { min-width: 0; flex: 1; }
   .evidence-strip { grid-template-columns: repeat(2, 1fr); }
 }
+
+/* Flow v4: use document scrolling so content below the first viewport stays reachable. */
+html, body { min-height: 100%; overflow-y: auto; }
+.studio-grid { height: auto; min-height: calc(100vh - 151px); overflow: visible; align-items: start; }
+.conversation-pane, .workspace-pane { min-height: calc(100vh - 151px); }
+.conversation-scroll, .workspace-content { flex: none; overflow: visible; }
