@@ -6,7 +6,7 @@
   const $$ = (selector, root = document) => [...root.querySelectorAll(selector)];
   const esc = (value = '') => String(value).replace(/[&<>'"]/g, (char) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;', '"': '&quot;' }[char]));
   const saved = JSON.parse(localStorage.getItem('frontier-demo-state') || '{}');
-  const stateVersion = 3;
+  const stateVersion = 4;
 
   const initialState = {
     selectedScenarioId: defaultScenarioId,
@@ -80,7 +80,7 @@
       <div class="eyebrow">AI-NATIVE CYBER OPERATIONS RANGE</div>
       <h1>按真实网安动线<br><span>创建并执行安全任务</span></h1>
       <p>从授权定界开始，经过环境基线、技术执行、人工闸门、验证复测与产出归档；全程仅在隔离靶场中模拟。</p>
-      <div class="prompt-box"><textarea id="task-prompt" rows="5" aria-label="描述安全任务">${esc(state.prompt)}</textarea><div class="prompt-toolbar"><div class="mode-group"><button class="mode-button" id="task-type">${esc(current.type)}⌄</button><button class="mode-button active" id="mode-button">✦ ${esc(state.mode)}</button></div><button class="start-button" id="start-task">开始编排 <span>→</span></button></div></div>
+      <div class="prompt-box"><textarea id="task-prompt" rows="5" aria-label="描述安全任务">${esc(state.prompt)}</textarea><div class="prompt-toolbar"><div class="mode-group"><button class="mode-button" id="task-type">${esc(current.type)}⌄</button><button class="mode-button active" id="mode-button">✦ ${esc(state.mode)}</button></div><button class="start-button" id="start-task">启动演示任务 <span>→</span></button></div></div>
       <div class="boundary-note"><span>✓</span> 演示数据 · 授权定界 · 隔离执行 · 可回滚 · 全程留痕</div>
     </div><div class="preset-section"><div class="preset-heading"><span>四类典型网安任务</span><small>每类采用不同的专业里程碑与工具链</small></div><div class="preset-grid four">
       ${presets.map((item, index) => `<button class="preset-card ${item.id === current.id ? 'featured selected' : ''}" data-preset="${item.id}"><div class="preset-top"><span>${esc(item.tag)}</span><i>0${index + 1}</i></div><h3>${esc(item.title)}</h3><p>${esc(item.subtitle)}</p><div class="preset-tags"><span>${esc(item.type)}</span><span>${index === 3 ? '红蓝协同' : index === 2 ? '安全回归' : index === 1 ? '受控验证' : '发现研判'}</span></div></button>`).join('')}
@@ -91,7 +91,7 @@
     $('#task-prompt').addEventListener('input', (event) => { state.prompt = event.target.value; persist(); });
     $('#start-task').addEventListener('click', () => {
       state.prompt = $('#task-prompt').value.trim() || scenario().prompt;
-      Object.assign(state, { phase: 'draft', creationIndex: -1, eventIndex: -1, workspaceTab: 'canvas', selectedEvent: 'EV-001', playing: false, assetsOpen: false });
+      Object.assign(state, { phase: 'creating', creationIndex: 0, eventIndex: -1, workspaceTab: 'canvas', selectedEvent: 'EV-001', playing: false, assetsOpen: false });
       location.hash = '#/studio';
     });
     $$('#view [data-preset]').forEach((button) => button.addEventListener('click', () => {
@@ -151,7 +151,7 @@
   function renderComposer() {
     const total = scenario().events.length;
     if (state.phase === 'draft') return '<div class="composer-note">先确认授权范围、交战规则和任务预算</div>';
-    if (state.phase === 'creating') return '<div class="composer-note running"><i></i> 正在创建任务、环境基线与恢复检查点…</div>';
+    if (state.phase === 'creating') return '<div class="composer-note running"><i></i> 正在创建任务、环境基线与恢复检查点，完成后自动启动…</div>';
     if (state.phase === 'created') return '<div class="composer-action"><div><b>任务已就绪</b><small>交战规则、里程碑和环境快照已冻结</small></div><button class="primary-button" id="start-run">启动受控执行 <span>→</span></button></div>';
     if (state.phase === 'running') return `<div class="composer-action"><div><b>正在执行第 ${state.eventIndex + 1} / ${total} 步</b><small>可暂停或单步推进</small></div><div><button class="ghost-button" id="toggle-run">${state.playing ? '暂停' : '继续'}</button><button class="primary-button" id="next-step">下一步</button></div></div>`;
     if (state.phase.startsWith('gate')) return '<div class="composer-note waiting">执行已安全暂停，等待上方人工决策</div>';
@@ -195,7 +195,7 @@
     $('#start-run')?.addEventListener('click', startRun);
     $('#toggle-run')?.addEventListener('click', () => { state.playing = !state.playing; render(); });
     $('#next-step')?.addEventListener('click', stepRun);
-    $('#replay-run')?.addEventListener('click', () => { state.phase = 'created'; state.eventIndex = -1; state.workspaceTab = 'canvas'; render(); });
+    $('#replay-run')?.addEventListener('click', startRun);
     $('#open-data')?.addEventListener('click', () => switchTab('data'));
     $('#workspace-assets')?.addEventListener('click', toggleAssets);
     $$('[data-tab]').forEach((button) => button.addEventListener('click', () => switchTab(button.dataset.tab)));
@@ -206,7 +206,14 @@
   }
 
   function switchTab(tabName) { state.workspaceTab = tabName; render(); }
-  function continueCreation() { timer = setTimeout(() => { if (state.phase !== 'creating') return; if (state.creationIndex < scenario().creation.length - 1) state.creationIndex += 1; else state.phase = 'created'; render(); }, 650); }
+  function continueCreation() {
+    timer = setTimeout(() => {
+      if (state.phase !== 'creating') return;
+      if (state.creationIndex < scenario().creation.length - 1) state.creationIndex += 1;
+      else Object.assign(state, { phase: 'running', eventIndex: -1, workspaceTab: 'canvas', playing: true });
+      render();
+    }, 650);
+  }
   function startRun() { state.phase = 'running'; state.eventIndex = -1; state.workspaceTab = 'canvas'; state.playing = true; render(); }
   function continueRun() { timer = setTimeout(stepRun, Math.round(1100 / state.speed)); }
   function stepRun() {
@@ -227,8 +234,10 @@
   function toggleAssets() { state.assetsOpen = !state.assetsOpen; renderShell(); renderAssets(); }
   function resetDemo() {
     stopTimer(); const current = scenario();
-    Object.assign(state, { ...initialState, selectedScenarioId: current.id, prompt: current.prompt, sampleCount: current.samples, duration: current.duration, phase: route() === 'studio' ? 'draft' : 'home' });
-    localStorage.removeItem('frontier-demo-state'); render(); toast('演示已重置');
+    Object.assign(state, { ...initialState, stateVersion, selectedScenarioId: current.id, prompt: current.prompt, sampleCount: current.samples, duration: current.duration });
+    localStorage.removeItem('frontier-demo-state');
+    if (route() === 'home') render(); else location.hash = '#/home';
+    toast('演示已重置');
   }
 
   $('#brand-home').addEventListener('click', () => { location.hash = '#/home'; });
