@@ -74,8 +74,8 @@
       $('#view').innerHTML = renderStudio(); bindStudio();
       if (state.phase === 'creating') continueCreation();
       if (state.phase === 'running' && state.playing) continueRun();
-      const target = $('.cot-streaming');
-      if (target) streamTokens(target);
+      const streamRoot = $('.cot-block.is-streaming');
+      if (streamRoot) streamLines(streamRoot);
     }
     renderAssets(); persist();
   }
@@ -93,9 +93,9 @@
     ['twin-commander', '数字孪生红蓝 Agent']
   ];
   const PLATFORM_STATS = [
-    ['1,000', '已接入真实靶场环境'],
-    ['100,000+', '测试任务集'],
-    ['1,000 万', '累计产生轨迹数据'],
+    ['1000+', '已接入真实靶场环境'],
+    ['100000+', '测试任务集'],
+    ['1000万+条', '累计产生轨迹数据'],
     ['20+', '支撑“关基”场景']
   ];
 
@@ -144,8 +144,9 @@
   }
 
   function renderConversationAnchor() {
+    const current = scenario();
     const active = !['home', 'completed'].includes(state.phase);
-    return `<div class="conversation-anchor"><div><small>任务目标</small><p>${esc(state.prompt)}</p></div><div class="anchor-intervention"><textarea id="intervention-input" rows="2" placeholder="输入验证重点、优先级或约束；将实时同步到执行画布"></textarea><button class="ghost-button" id="submit-intervention">干预执行 →</button>${active ? '<button class="fast-forward-button" id="fast-forward">快进至产出 ⏩</button>' : ''}</div><small class="anchor-note">${active ? '对话干预不会改变已建立的授权边界；也可直接快进查看最终产出。' : '任务已完成，可继续补充复盘意见。'}</small></div>`;
+    return `<div class="conversation-anchor"><div class="anchor-crumb"><span class="crumb-pill"><i></i>${esc(phaseLabel())}</span><span class="crumb-sep">·</span><b>${esc(current.title)}</b><span class="crumb-sep">·</span><small>${taskId()}</small></div><div class="anchor-goal"><small>任务目标</small><p>${esc(state.prompt)}</p></div><div class="anchor-composer"><textarea id="intervention-input" rows="2" placeholder="继续提问，或对本轮执行补充验证重点、优先级与约束……"></textarea><div class="composer-bar"><span class="composer-hint">Enter 发送 · Shift+Enter 换行 · 干预实时同步执行画布</span><div class="composer-actions">${active ? '<button class="fast-forward-button" id="fast-forward">快进至产出 ⏩</button>' : ''}<button class="composer-send" id="submit-intervention">干预 →</button></div></div></div><small class="anchor-note">${active ? '对话干预不会改变已建立的授权边界；也可直接快进查看最终产出。' : '任务已完成，可继续补充复盘意见。'}</small></div>`;
   }
 
   function reasoningSummary(event) {
@@ -189,21 +190,25 @@
     return [constraint, evidence, judgment, `→ 输出：${event.title}`];
   }
 
-  function cotText(events) {
+  function cotBlocks(events) {
     return events.map((event) => {
-      const head = `[${event.time}] ${event.type} · ${event.tool}`;
-      return [head, ...reasoningTrace(event)].join('\n');
-    }).join('\n\n');
+      const trace = reasoningTrace(event);
+      return { time: event.time, type: event.type, tool: event.tool, lines: trace.map((text, index) => ({ cls: index === trace.length - 1 ? 'cot-out' : '', text })) };
+    });
+  }
+
+  function cotBlockHtml(block, streaming) {
+    const lines = block.lines.map((line) => `<p class="cot-line${line.cls ? ` ${line.cls}` : ''}"${streaming ? ` data-full="${esc(line.text)}"` : ''}>${streaming ? '' : esc(line.text)}</p>`).join('');
+    return `<section class="cot-block${streaming ? ' is-streaming' : ''}"><header><i>◇</i><span>${esc(block.type)}</span><code>${esc(block.time)} · ${esc(block.tool)}</code></header>${lines}</section>`;
   }
 
   function renderExecutionStream() {
     const current = scenario();
     const events = current.events.slice(0, state.eventIndex + 1);
-    const settled = state.phase === 'completed' ? events : events.slice(0, -1);
-    const streaming = state.phase === 'completed' ? null : events.at(-1);
-    const settledText = cotText(settled);
-    const streamingText = streaming ? cotText([streaming]) : '';
-    return `<article class="cot-panel"><div class="cot-head"><span>LLM 推理流</span><em>${state.phase === 'completed' ? `${current.events.length} 条完成` : `${state.eventIndex + 1} / ${current.events.length}`}</em></div><div class="cot-notice">展示的是面向演示的可审查推理轨迹与依据，不包含模型隐藏思维链。</div><pre class="cot-stream">${esc(settledText)}${settledText && streamingText ? '\n\n' : ''}<span class="cot-streaming" data-full="${esc(streamingText)}"></span></pre></article>`;
+    const blocks = cotBlocks(events);
+    const settled = state.phase === 'completed' ? blocks : blocks.slice(0, -1);
+    const streaming = state.phase === 'completed' ? null : blocks.at(-1);
+    return `<article class="cot-panel"><div class="cot-head"><span class="cot-pill"><i></i>${state.phase === 'completed' ? '推理完成' : '深度推理中'}</span><em>${state.phase === 'completed' ? `${current.events.length} 段推理轨迹` : `第 ${state.eventIndex + 1} / ${current.events.length} 段`}</em></div><p class="cot-notice">展示的是面向演示的可审查推理轨迹与依据，不包含模型隐藏思维链。</p><div class="cot-stream">${settled.map((block) => cotBlockHtml(block, false)).join('')}${streaming ? cotBlockHtml(streaming, true) : ''}</div></article>`;
   }
 
   function renderRiskGate() { return ''; }
@@ -297,7 +302,7 @@
 
   function bindStudio() {
     $('#reset-task').addEventListener('click', resetDemo); $('#show-assets')?.addEventListener('click', toggleAssets); $('#open-assets')?.addEventListener('click', toggleAssets); $('#open-data')?.addEventListener('click', () => switchTab('data')); $('#fast-forward')?.addEventListener('click', fastForward);
-    $('#submit-intervention')?.addEventListener('click', submitIntervention); $('#intervention-input')?.addEventListener('keydown',(event)=>{if((event.ctrlKey||event.metaKey)&&event.key==='Enter')submitIntervention();});
+    $('#submit-intervention')?.addEventListener('click', submitIntervention); $('#intervention-input')?.addEventListener('keydown',(event)=>{if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();submitIntervention();}});
     $('#workspace-assets')?.addEventListener('click', toggleAssets);
     $$('[data-tab]').forEach((button) => button.addEventListener('click', () => switchTab(button.dataset.tab)));
     $$('[data-event]').forEach((button) => button.addEventListener('click', () => { state.selectedEvent = button.dataset.event; state.workspaceTab = 'canvas'; render(); }));
@@ -338,15 +343,30 @@
   function finishRun() { state.phase = 'completed'; state.playing = false; state.eventIndex = scenario().events.length - 1; state.selectedEvent = scenario().events.at(-1).id; state.workspaceTab = 'data'; render(); }
   function stopTimer() { if (timer) clearTimeout(timer); timer = null; }
   function stopStream() { if (streamTimer) clearInterval(streamTimer); streamTimer = null; }
-  function streamTokens(node) {
+  function streamLines(root) {
     stopStream();
-    const full = node.dataset.full || '';
-    let index = 0;
-    node.textContent = '';
+    const lines = Array.from(root.querySelectorAll('.cot-line[data-full]'));
+    if (!lines.length) return;
+    const caret = document.createElement('span');
+    caret.className = 'cot-caret';
+    lines.forEach((line) => line.insertBefore(document.createTextNode(''), line.firstChild));
+    lines[0].appendChild(caret);
+    let lineIndex = 0;
+    let charIndex = 0;
     streamTimer = setInterval(() => {
-      index = Math.min(full.length, index + 2);
-      node.textContent = full.slice(0, index);
-      if (index >= full.length) stopStream();
+      const line = lines[lineIndex];
+      if (!line) return stopStream();
+      const full = line.dataset.full || '';
+      charIndex = Math.min(full.length, charIndex + 2);
+      line.firstChild.nodeValue = full.slice(0, charIndex);
+      const host = document.scrollingElement;
+      if (host && host.scrollHeight - (window.scrollY + window.innerHeight) < 160) window.scrollTo(0, host.scrollHeight);
+      if (charIndex >= full.length) {
+        lineIndex += 1;
+        charIndex = 0;
+        if (lineIndex >= lines.length) return stopStream();
+        lines[lineIndex].appendChild(caret);
+      }
     }, 16);
   }
   function toggleAssets() { state.assetsOpen = !state.assetsOpen; renderShell(); renderAssets(); }
