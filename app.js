@@ -6,7 +6,7 @@
   const $$ = (selector, root = document) => [...root.querySelectorAll(selector)];
   const esc = (value = '') => String(value).replace(/[&<>'"]/g, (char) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;', '"': '&quot;' }[char]));
   const saved = JSON.parse(localStorage.getItem('frontier-demo-state') || '{}');
-  const stateVersion = 8;
+  const stateVersion = 9;
 
   const initialState = {
     selectedScenarioId: defaultScenarioId,
@@ -15,7 +15,8 @@
     workspaceTab: 'canvas', selectedEvent: 'EV-001',
     sampleCount: scenarios[defaultScenarioId].samples,
     duration: scenarios[defaultScenarioId].duration,
-    speed: 1, assetsOpen: false, playing: false, operatorInterventions: [], selectedTwinAsset: null, assetDetail: null
+    speed: 1, assetsOpen: false, playing: false, operatorInterventions: [], selectedTwinAsset: null, assetDetail: null,
+    model: 'gpt-5.6-sol', agent: 'security-ops'
   };
   const state = saved.stateVersion === stateVersion && saved.selectedScenarioId
     ? { ...initialState, ...saved, playing: false, assetsOpen: false }
@@ -24,9 +25,12 @@
   if (!['canvas', 'data'].includes(state.workspaceTab)) state.workspaceTab = 'canvas';
   state.operatorInterventions ||= [];
   let timer = null;
+  let streamTimer = null;
 
   function scenario() { return scenarios[state.selectedScenarioId]; }
   function taskId() { return `TASK-${scenario().id}-01`; }
+  function optionLabel(options, value) { return (options.find(([id]) => id === value) || [value, value])[1]; }
+  function runnerLabel() { return `${optionLabel(MODEL_OPTIONS, state.model)} · ${optionLabel(AGENT_OPTIONS, state.agent)}`; }
   function route() {
     const value = location.hash.replace(/^#\//, '');
     if (['dialogue', 'workbench', 'data', 'report'].includes(value)) return 'studio';
@@ -58,32 +62,60 @@
     const labels = ['任务定义', '受控执行', '产出归档'];
     $('#global-flow').innerHTML = labels.map((label, index) => `
       <div class="global-step ${index < step ? 'done' : ''} ${index === step ? 'active' : ''}"><span>${index < step ? '✓' : index + 1}</span><b>${label}</b></div>${index < labels.length - 1 ? '<i></i>' : ''}`).join('');
-    $('#run-state').innerHTML = `<span class="status-dot ${state.phase === 'running' && route() !== 'home' ? 'pulse' : ''}"></span>${route() === 'home' ? '等待输入' : phaseLabel()}`;
     $('#asset-toggle').classList.toggle('active', state.assetsOpen);
     $('#asset-drawer').classList.toggle('open', state.assetsOpen);
   }
 
   function render() {
-    stopTimer(); renderShell();
+    stopTimer(); stopStream(); renderShell();
     if (route() === 'home') { $('#view').innerHTML = renderHome(); bindHome(); }
     else {
       if (state.phase === 'home') state.phase = 'draft';
       $('#view').innerHTML = renderStudio(); bindStudio();
       if (state.phase === 'creating') continueCreation();
       if (state.phase === 'running' && state.playing) continueRun();
+      const target = $('.cot-streaming');
+      if (target) streamTokens(target);
     }
     renderAssets(); persist();
+  }
+
+  const MODEL_OPTIONS = [
+    ['gpt-5.6-sol', 'GPT-5.6-sol · 通用安全推理'],
+    ['claude-opus-5', 'Claude-Opus-5 · 长程任务规划'],
+    ['qwen3.8-max', 'Qwen3.8-Max · 中文安全语料']
+  ];
+  const AGENT_OPTIONS = [
+    ['security-ops', '安全运营 Agent'],
+    ['vuln-hunter', '漏洞挖掘 Agent'],
+    ['exploit-verifier', '受控利用 Agent'],
+    ['patch-engineer', '漏洞修复 Agent'],
+    ['twin-commander', '数字孪生红蓝 Agent']
+  ];
+  const PLATFORM_STATS = [
+    ['1,000', '已接入真实靶场环境'],
+    ['100,000+', '测试任务集'],
+    ['1,000 万', '累计产生轨迹数据'],
+    ['20+', '支撑“关基”场景']
+  ];
+
+  function selectOptions(options, value) {
+    return options.map(([id, label]) => `<option value="${id}" ${id === value ? 'selected' : ''}>${esc(label)}</option>`).join('');
   }
 
   function renderHome() {
     const current = scenario();
     return `<section class="home-page"><div class="home-hero">
       <div class="eyebrow">AI-NATIVE CYBER OPERATIONS RANGE</div>
-      <h1>按真实网安动线<br><span>创建并执行安全任务</span></h1>
-      <p>从授权定界开始，经过环境基线、技术执行、人工闸门、验证复测与产出归档；全程仅在隔离靶场中模拟。</p>
-      <div class="prompt-box"><textarea id="task-prompt" rows="5" aria-label="描述安全任务">${esc(state.prompt)}</textarea><div class="prompt-toolbar"><div class="mode-group"><button class="mode-button" id="task-type">${esc(current.type)}⌄</button><button class="mode-button active" id="mode-button">✦ ${esc(state.mode)}</button></div><button class="start-button" id="start-task">启动演示任务 <span>→</span></button></div></div>
+      <h1>按真实网安动线<span>创建并执行安全任务</span></h1>
+      <div class="platform-stats">${PLATFORM_STATS.map(([value, label]) => `<div><b>${esc(value)}</b><small>${esc(label)}</small></div>`).join('')}</div>
+      <div class="prompt-box"><textarea id="task-prompt" rows="3" aria-label="描述安全任务">${esc(state.prompt)}</textarea><div class="prompt-toolbar"><div class="mode-group">
+        <label class="select-field"><span>执行模型</span><select id="model-select">${selectOptions(MODEL_OPTIONS, state.model)}</select></label>
+        <label class="select-field"><span>执行智能体</span><select id="agent-select">${selectOptions(AGENT_OPTIONS, state.agent)}</select></label>
+        <label class="select-field"><span>任务类型</span><select id="task-type">${presets.map((item) => `<option value="${item.id}" ${item.id === current.id ? 'selected' : ''}>${esc(item.type)}</option>`).join('')}</select></label>
+      </div><button class="start-button" id="start-task">启动任务 <span>→</span></button></div></div>
       <div class="boundary-note"><span>✓</span> 演示数据 · 授权定界 · 隔离执行 · 可回滚 · 全程留痕</div>
-    </div><div class="preset-section"><div class="preset-heading"><span>四类典型网安任务</span><small>每类采用不同的专业里程碑与工具链</small></div><div class="preset-grid four">
+    </div><div class="preset-section"><div class="preset-heading"><span>典型任务示例</span><small>每类采用不同的专业里程碑与工具链</small></div><div class="preset-grid four">
       ${presets.map((item, index) => `<button class="preset-card ${item.id === current.id ? 'featured selected' : ''}" data-preset="${item.id}"><div class="preset-top"><span>${esc(item.tag)}</span><i>0${index + 1}</i></div><h3>${esc(item.title)}</h3><p>${esc(item.subtitle)}</p><div class="preset-tags"><span>${esc(item.type)}</span><span>${index === 3 ? '红蓝协同' : index === 2 ? '安全回归' : index === 1 ? '受控验证' : '发现研判'}</span></div></button>`).join('')}
     </div></div></section>`;
   }
@@ -100,13 +132,14 @@
       state.sampleCount = scenario().samples; state.duration = scenario().duration; render();
       toast(`已切换：${scenario().type}`);
     }));
-    $('#mode-button').addEventListener('click', () => { state.mode = state.mode === 'Auto' ? '深度编排' : 'Auto'; render(); });
-    $('#task-type').addEventListener('click', () => toast('请从下方选择四类典型任务'));
+    $('#model-select').addEventListener('change', (event) => { state.model = event.target.value; persist(); toast('执行模型已切换'); });
+    $('#agent-select').addEventListener('change', (event) => { state.agent = event.target.value; persist(); toast('执行智能体已切换'); });
+    $('#task-type').addEventListener('change', (event) => { state.selectedScenarioId = event.target.value; state.prompt = scenario().prompt; state.sampleCount = scenario().samples; state.duration = scenario().duration; render(); });
   }
 
   function renderStudio() {
     const current = scenario();
-    return `<section class="studio-page"><header class="studio-head"><div><a href="#/home" class="back-link">← 新建任务</a><h1>${esc(current.title)}</h1><p><span class="demo-pill">${esc(current.type)}</span> ${taskId()} · ${esc(phaseLabel())}</p></div><div class="studio-actions"><button class="ghost-button" id="reset-task">重置</button>${state.phase === 'completed' ? '<button class="primary-button" id="show-assets">查看产出物 →</button>' : ''}</div></header>
+    return `<section class="studio-page"><header class="studio-head"><div><a href="#/home" class="back-link">← 新建任务</a><h1>${esc(current.title)}</h1><p><span class="demo-pill">${esc(current.type)}</span> ${taskId()} · ${esc(phaseLabel())} · ${esc(runnerLabel())}</p></div><div class="studio-actions"><button class="ghost-button" id="reset-task">重置</button>${state.phase === 'completed' ? '<button class="primary-button" id="show-assets">查看产出物 →</button>' : ''}</div></header>
       <div class="studio-grid"><section class="conversation-pane"><div class="pane-title"><div><span>推理会话</span><small>只展示可审查的推理、观测与人工干预</small></div><span class="live-chip"><i></i>${esc(phaseLabel())}</span></div>${renderConversationAnchor()}<div class="conversation-scroll" id="conversation-scroll">${renderConversation()}</div></section><section class="workspace-pane">${renderWorkspace()}</section></div></section>`;
   }
 
@@ -144,15 +177,33 @@
 
 
   function reasoningTrace(event) {
-    const constraint = event.type === 'PLAN' ? '检索已冻结的范围、授权和停止条件，不扩大任务边界。' : '复核当前动作仍符合建立阶段确认的最小权限与环境隔离约束。';
-    const evidence = event.type === 'OBSERVATION' || event.type === 'EVIDENCE' ? `关联观测与运行记录：${event.detail}` : `读取工具回显与环境状态：${event.tool}。`;
-    const judgment = event.type === 'RESULT' ? '完成结果归并，生成可回指的报告与数据集产出。' : `形成当前判断：${event.title}。`;
-    return [constraint, evidence, judgment];
+    const constraint = event.type === 'PLAN'
+      ? '检索已冻结的范围、授权和停止条件，确认本次动作不扩大任务边界。'
+      : '复核当前动作仍符合建立阶段确认的最小权限与环境隔离约束。';
+    const evidence = event.type === 'OBSERVATION' || event.type === 'EVIDENCE'
+      ? `关联观测与运行记录：${event.detail}`
+      : `读取工具回显与环境状态：${event.tool}。`;
+    const judgment = event.type === 'RESULT'
+      ? '完成结果归并，生成可回指的报告与数据集产出。'
+      : `形成当前判断：${event.title}。`;
+    return [constraint, evidence, judgment, `→ 输出：${event.title}`];
+  }
+
+  function cotText(events) {
+    return events.map((event) => {
+      const head = `[${event.time}] ${event.type} · ${event.tool}`;
+      return [head, ...reasoningTrace(event)].join('\n');
+    }).join('\n\n');
   }
 
   function renderExecutionStream() {
     const current = scenario();
-    return `<article class="reasoning-feed"><div class="reasoning-feed-head"><span>LLM 推理流</span><em>${state.phase === 'completed' ? `${current.events.length} 条完成` : `${state.eventIndex + 1} / ${current.events.length}`}</em></div><div class="reasoning-disclaimer">展示的是面向演示的可审查推理轨迹与依据，不包含模型隐藏思维链。</div>${current.events.slice(0, state.eventIndex + 1).map((event, index, items) => `<article class="reasoning-stream ${state.selectedEvent === event.id ? 'selected' : ''} ${index === items.length - 1 && state.phase === 'running' ? 'is-streaming' : ''}" data-event="${event.id}"><header><span>${esc(event.type)}</span><time>${esc(event.time)}</time><code>${esc(event.tool)}</code></header>${reasoningTrace(event).map((line, lineIndex) => `<p style="--line:${lineIndex}"><i>›</i>${esc(line)}</p>`).join('')}<footer>输出：${esc(event.title)}</footer></article>`).join('')}</article>`;
+    const events = current.events.slice(0, state.eventIndex + 1);
+    const settled = state.phase === 'completed' ? events : events.slice(0, -1);
+    const streaming = state.phase === 'completed' ? null : events.at(-1);
+    const settledText = cotText(settled);
+    const streamingText = streaming ? cotText([streaming]) : '';
+    return `<article class="cot-panel"><div class="cot-head"><span>LLM 推理流</span><em>${state.phase === 'completed' ? `${current.events.length} 条完成` : `${state.eventIndex + 1} / ${current.events.length}`}</em></div><div class="cot-notice">展示的是面向演示的可审查推理轨迹与依据，不包含模型隐藏思维链。</div><pre class="cot-stream">${esc(settledText)}${settledText && streamingText ? '\n\n' : ''}<span class="cot-streaming" data-full="${esc(streamingText)}"></span></pre></article>`;
   }
 
   function renderRiskGate() { return ''; }
@@ -286,6 +337,18 @@
 
   function finishRun() { state.phase = 'completed'; state.playing = false; state.eventIndex = scenario().events.length - 1; state.selectedEvent = scenario().events.at(-1).id; state.workspaceTab = 'data'; render(); }
   function stopTimer() { if (timer) clearTimeout(timer); timer = null; }
+  function stopStream() { if (streamTimer) clearInterval(streamTimer); streamTimer = null; }
+  function streamTokens(node) {
+    stopStream();
+    const full = node.dataset.full || '';
+    let index = 0;
+    node.textContent = '';
+    streamTimer = setInterval(() => {
+      index = Math.min(full.length, index + 2);
+      node.textContent = full.slice(0, index);
+      if (index >= full.length) stopStream();
+    }, 16);
+  }
   function toggleAssets() { state.assetsOpen = !state.assetsOpen; renderShell(); renderAssets(); }
   function resetDemo() {
     stopTimer(); const current = scenario();

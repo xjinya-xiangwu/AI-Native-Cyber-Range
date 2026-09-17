@@ -524,3 +524,57 @@ html, body { min-height: 100%; overflow-y: auto; }
 .report-modal { width: min(880px,94vw); }.report-preview { display: grid; gap: 15px; margin-top: 15px; }.report-banner { padding: 18px; color: #f8fbfd; background: linear-gradient(135deg, #173948, #1d6386); }.report-banner span,.report-banner b,.report-banner small { display:block; }.report-banner span { font-size:8px; letter-spacing:.14em; opacity:.75; }.report-banner b { margin:6px 0; font:500 22px Georgia,"Songti SC",serif; }.report-banner small { font-size:8px; opacity:.8; }
 .report-preview section { padding: 0 2px; }.report-preview h3 { margin:0 0 7px; color:#244a60; font-size:13px; }.report-preview p,.report-preview li { color:#40505a; font-size:10px; line-height:1.7; }.report-preview ul,.report-preview ol { margin:0; padding-left:20px; }.report-preview table { width:100%; border-collapse:collapse; font-size:9px; }.report-preview th { color:#395c70; background:#edf5f8; }.report-preview th,.report-preview td { padding:8px; text-align:left; border:1px solid #cfdde3; }.report-preview details { padding:10px; border:1px solid var(--line); background:#f8faf9; }.report-preview summary { color:var(--blue); cursor:pointer; font-size:9px; }.report-preview pre { white-space:pre-wrap; max-height:250px; overflow:auto; margin:10px 0 0; color:#3d4a52; font:8px/1.55 ui-monospace,SFMono-Regular,Consolas,monospace; }
 @media (max-width:860px) { .anchor-intervention { grid-template-columns:1fr; }.fast-forward-button { min-height:34px; }.reasoning-stream { padding-left:15px; }.report-banner b { font-size:18px; } }
+
+/* Flow v10: compact home entry, stats strip, model/agent selectors, plain-text CoT stream. */
+.app-header { grid-template-columns: 260px 1fr 180px; }
+.home-page { max-width: 1180px; padding: 30px 32px 34px; }
+.home-hero { max-width: 940px; }
+.home-hero h1 { margin: 12px 0 14px; font: 500 clamp(26px, 3vw, 40px)/1.2 Georgia, "Songti SC", serif; letter-spacing: -.02em; }
+.home-hero h1 span { display: block; }
+.eyebrow { font-size: 10px; }
+.platform-stats { display: grid; grid-template-columns: repeat(4, 1fr); gap: 1px; margin: 0 auto 16px; max-width: 860px; border: 1px solid var(--line); background: var(--line); }
+.platform-stats > div { padding: 9px 6px; background: rgba(255,255,252,.92); }
+.platform-stats b { display: block; color: var(--blue); font: 500 17px Georgia, "Songti SC", serif; }
+.platform-stats small { display: block; margin-top: 3px; color: var(--muted); font-size: 10px; }
+.prompt-box textarea { min-height: 96px; padding: 16px 18px; font-size: 14px; line-height: 1.65; }
+.prompt-toolbar { min-height: 52px; padding: 8px 10px 8px 12px; flex-wrap: wrap; }
+.mode-group { gap: 10px; }
+.select-field { display: grid; gap: 3px; }
+.select-field > span { color: #7c848c; font-size: 8px; letter-spacing: .06em; }
+.select-field select { height: 32px; min-width: 158px; padding: 0 8px; border: 1px solid var(--line); background: #fff; color: var(--ink); cursor: pointer; font-size: 11px; }
+.select-field select:hover { border-color: #9cbdd9; }
+.start-button { height: 36px; min-width: 118px; }
+.boundary-note { margin-top: 11px; font-size: 10px; }
+.preset-section { margin-top: 24px; }
+.preset-heading { margin-bottom: 10px; }
+.preset-heading span { font: 500 17px Georgia, "Songti SC", serif; }
+.preset-heading small { font-size: 11px; }
+.preset-grid { gap: 12px; }
+.preset-grid.four .preset-card { min-height: 0; padding: 13px 14px; }
+.preset-card h3 { margin: 9px 0 5px; font-size: 14px; }
+.preset-card p { min-height: 0; font-size: 11px; line-height: 1.5; }
+.preset-tags { margin-top: 10px; gap: 5px; }
+.preset-tags span { padding: 3px 6px; font-size: 9px; }
+.preset-top span { font-size: 9px; }
+.preset-top i { font-size: 20px; }
+
+/* Plain-text chain-of-thought stream: no cards, token-level progressive output. */
+.cot-panel { margin: 0; }
+.cot-head { display: flex; justify-content: space-between; align-items: baseline; padding-bottom: 6px; }
+.cot-head span { color: var(--ink); font-size: 11px; font-weight: 750; }
+.cot-head em { color: var(--muted); font-size: 8px; font-style: normal; }
+.cot-notice { margin-bottom: 9px; color: #85929a; font-size: 8px; }
+.cot-stream { margin: 0; padding: 0; white-space: pre-wrap; word-break: break-word; color: #2f3d47; background: transparent; border: 0; font: 11px/1.85 ui-monospace, SFMono-Regular, Menlo, Consolas, "Courier New", monospace; }
+.cot-streaming::after { content: '▌'; margin-left: 1px; color: var(--blue); animation: cot-cursor .8s step-end infinite; }
+@keyframes cot-cursor { 50% { opacity: 0; } }
+
+@media (max-width: 1180px) { .select-field select { min-width: 132px; } .platform-stats { grid-template-columns: repeat(2, 1fr); } }
+@media (max-width: 860px) {
+  .home-page { padding: 20px 18px 26px; }
+  .home-hero h1 { font-size: 26px; }
+  .prompt-toolbar { align-items: stretch; }
+  .mode-group { width: 100%; }
+  .select-field { flex: 1; }
+  .select-field select { width: 100%; min-width: 0; }
+  .cot-stream { font-size: 10px; }
+}
